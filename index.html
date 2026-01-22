@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<title>Global Macro Breadth Engine v7.0 TURBO (High Performance)</title>
+<title>Global Macro Breadth Engine v7.1 TURBO (Robustness Restored)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Quant Engine focused on Market Breadth Analysis & Top Rank Alpha - Hyper Performance Edition">
 
@@ -99,6 +99,13 @@ th.sortable:hover { color: #8B5CF6; }
 .logic-card { @apply bg-white dark:bg-dark-800 p-4 rounded-xl border border-gray-200 dark:border-dark-700 shadow-sm hover:border-brand-500 transition-colors; }
 .logic-header { @apply flex items-center justify-between mb-2 border-b dark:border-dark-700 pb-2; }
 
+/* Robustness Pagination */
+.robust-pagination { display: flex; justify-content: space-between; align-items: center; padding-top: 4px; }
+.pg-btn { font-size: 9px; padding: 2px 8px; border-radius: 4px; background: rgba(0,0,0,0.05); transition: all 0.2s; }
+.dark .pg-btn { background: rgba(255,255,255,0.1); color: #fff; }
+.pg-btn:hover:not(:disabled) { background: #8B5CF6; color: white; }
+.pg-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
 /* Hyper Badge */
 .hyper-badge { background: linear-gradient(135deg, #8B5CF6, #3B82F6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900; font-style: italic; text-shadow: 0 0 10px rgba(139,92,246,0.2); }
 </style>
@@ -112,7 +119,7 @@ th.sortable:hover { color: #8B5CF6; }
     <div class="flex items-center gap-3">
       <h1 class="font-bold text-base flex items-center gap-2 text-dark-900 dark:text-white">
         <span class="text-xl text-brand-500"><i class="fas fa-layer-group"></i></span> 
-        <span>Breadth Engine <span class="hyper-badge text-[10px] ml-1">TURBO v7.0</span></span>
+        <span>Breadth Engine <span class="hyper-badge text-[10px] ml-1">TURBO v7.1</span></span>
       </h1>
       <nav class="hidden md:flex gap-1 ml-4">
           <button id="btn-tab-dashboard" onclick="UI.switchTab('dashboard')" class="px-3 py-1 text-[10px] font-bold rounded bg-white dark:bg-dark-800 shadow-sm text-brand-600 transition-all">DASHBOARD</button>
@@ -141,7 +148,7 @@ th.sortable:hover { color: #8B5CF6; }
 <aside class="col-span-12 xl:col-span-2 space-y-3">
 <div class="glass rounded-xl p-4 border-t-4 border-t-brand-500 sticky top-20 shadow-lg z-30">
   <div class="mb-3 flex items-center justify-between">
-    <h3 class="text-[10px] font-black uppercase text-gray-500 tracking-widest">Setup v7.0</h3>
+    <h3 class="text-[10px] font-black uppercase text-gray-500 tracking-widest">Setup v7.1</h3>
     <span class="text-[8px] bg-brand-500/20 text-brand-600 px-1.5 py-0.5 rounded font-bold">TURBO</span>
   </div>
 
@@ -408,7 +415,29 @@ th.sortable:hover { color: #8B5CF6; }
                     </div>
                 </div>
                 <div class="flex flex-col h-full gap-4">
-                    <div id="viz-dist" class="h-full z-10"></div>
+                    <div id="viz-dist" class="h-[55%] z-10"></div>
+                    
+                    <!-- Robustness Table (Restored) -->
+                    <div class="flex-1 overflow-hidden border-t dark:border-dark-700 pt-2 flex flex-col">
+                        <div class="flex justify-between items-center mb-2 px-2">
+                            <div class="flex items-center gap-1">
+                                <h4 class="text-[9px] font-bold uppercase text-acc-orange"><i class="fas fa-shield-alt"></i> Top 20 Robust Clusters</h4>
+                            </div>
+                        </div>
+                        <div class="overflow-y-auto flex-1 custom-scrollbar">
+                            <table class="w-full text-[9px] mono">
+                                <thead class="bg-gray-100 dark:bg-dark-800 text-gray-500">
+                                    <tr><th class="text-left p-1">Rank</th><th>LB</th><th>RB</th><th class="text-right text-acc-orange">Robust Score</th><th class="text-right text-gray-400">Raw Value</th></tr>
+                                </thead>
+                                <tbody id="robustness-table-body" class="divide-y dark:divide-dark-700"></tbody>
+                            </table>
+                        </div>
+                        <div class="robust-pagination px-2 flex justify-between items-center pt-1 border-t dark:border-dark-800">
+                            <button class="pg-btn" id="btn-robust-prev" onclick="UI.prevRobustPage()"><i class="fas fa-chevron-left"></i></button>
+                            <span class="text-[8px] font-bold text-gray-500" id="robust-page-info">1 / 5</span>
+                            <button class="pg-btn" id="btn-robust-next" onclick="UI.nextRobustPage()"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -451,7 +480,7 @@ th.sortable:hover { color: #8B5CF6; }
     <!-- DOCS TAB (EXPANDED - INFOGRAPHIC STYLE) -->
     <div id="view-docs" class="space-y-8 animate-fade-in hidden">
         <div class="text-center mb-8">
-            <span class="bg-brand-500 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-widest">Education v7.0</span>
+            <span class="bg-brand-500 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-widest">Education v7.1</span>
             <h1 class="text-2xl font-bold text-dark-900 dark:text-white mt-2">ขั้นตอนการทำงานและสูตรคำนวณ (Workflow & Logic)</h1>
             <p class="text-gray-500 text-xs mt-2">อธิบายกระบวนการทำงานของระบบและเงื่อนไขการเทรดทุกรูปแบบอย่างละเอียด</p>
         </div>
@@ -645,7 +674,7 @@ th.sortable:hover { color: #8B5CF6; }
 
 <script>
 /* =========================================================
-   QUANT ENGINE HYPER v7.0 TURBO (Parallel & Async)
+   QUANT ENGINE HYPER v7.1 TURBO (Parallel & Async)
 ========================================================= */
 
 const REGIONS = {
@@ -1198,6 +1227,9 @@ class QuantEngine {
 const UI = {
     chartEq: null, chartDD: null,
     currentPage: 1, rowsPerPage: 10, filteredData: [],
+    
+    // Robustness Props
+    robustData: [], robustPage: 1, robustPerPage: 4,
 
     init(){
         this.renderHealthMonitor();
@@ -1391,7 +1423,106 @@ const UI = {
         const x = [], y = [], z = [];
         Engine.results.slice(0, 100).forEach(r => { x.push(r.lb); y.push(r.rb); z.push(parseFloat(r.stats.sharpe)); });
         Plotly.newPlot('viz-surface', [{ type: 'mesh3d', x, y, z, intensity: z, colorscale: 'Viridis' }], { margin: { t:0, b:0, l:0, r:0 }, paper_bgcolor: 'rgba(0,0,0,0)' }, {displayModeBar: false});
+        
+        // --- Calculate and Render Robustness ---
+        // Prepare data for robustness logic (Matrix form)
+        const lbs = [...new Set(Engine.results.map(r => r.lb))].sort((a,b)=>a-b);
+        const rbs = [...new Set(Engine.results.map(r => r.rb))].sort((a,b)=>a-b);
+        const zGrid = rbs.map(rb => lbs.map(lb => {
+            const m = Engine.results.find(r => r.lb === lb && r.rb === rb);
+            return m ? parseFloat(m.stats.sharpe) : null;
+        }));
+        
+        // Pass to robust renderer
+        this.renderRobustnessTable(Engine.results, zGrid, lbs, rbs, 'sharpe');
     },
+    
+    renderRobustnessTable(filtered, zGrid, lbs, rbs, metric) {
+        // Calculate Neighbor Score for each point
+        const scores = [];
+        const isMinimization = ['mdd', 'vol'].includes(metric);
+
+        for (let r = 0; r < rbs.length; r++) {
+            for (let l = 0; l < lbs.length; l++) {
+                const val = zGrid[r][l];
+                if (val === null || isNaN(val)) continue;
+                
+                const RADIUS = 1; // Check immediate neighbors (3x3 grid)
+                const SIGMA = 1;
+                
+                let sumWeighted = 0;
+                let sumWeight = 0;
+                
+                for (let dr = -RADIUS; dr <= RADIUS; dr++) {
+                    for (let dl = -RADIUS; dl <= RADIUS; dl++) {
+                        const rr = r + dr;
+                        const ll = l + dl;
+                        
+                        if (rr >= 0 && rr < rbs.length && ll >= 0 && ll < lbs.length) {
+                            const v = zGrid[rr][ll];
+                            if (v !== null && !isNaN(v)) {
+                                const dist2 = dr * dr + dl * dl;
+                                const weight = Math.exp(-dist2 / (2 * SIGMA * SIGMA));
+                                sumWeighted += v * weight;
+                                sumWeight += weight;
+                            }
+                        }
+                    }
+                }
+                
+                const robustScore = sumWeight > 0 ? sumWeighted / sumWeight : null;
+                scores.push({ lb: lbs[l], rb: rbs[r], score: robustScore, raw: val });
+            }
+        }
+        
+        // Sort
+        if (isMinimization) scores.sort((a, b) => a.score - b.score);
+        else scores.sort((a, b) => b.score - a.score);
+        
+        this.robustData = scores.slice(0, 20);
+        this.robustPage = 1;
+        this.renderRobustnessView();
+    },
+
+    renderRobustnessView() {
+        const tbody = document.getElementById('robustness-table-body');
+        if (!tbody) return;
+
+        const start = (this.robustPage - 1) * this.robustPerPage;
+        const end = start + this.robustPerPage;
+        const pageData = this.robustData.slice(start, end);
+        const totalPages = Math.ceil(this.robustData.length / this.robustPerPage);
+
+        tbody.innerHTML = pageData.map((s, i) => `
+            <tr class="hover:bg-brand-500/10 transition-colors cursor-pointer" onclick="alert('Cluster: Lookback ${s.lb}, Rebal ${s.rb} days')">
+                <td class="p-1 border-b dark:border-dark-700 font-bold text-center">${start + i + 1}</td>
+                <td class="p-1 border-b dark:border-dark-700 text-center font-mono text-brand-500">${s.lb}</td>
+                <td class="p-1 border-b dark:border-dark-700 text-center font-mono text-brand-500">${s.rb}</td>
+                <td class="p-1 border-b dark:border-dark-700 text-right font-bold text-acc-green">${s.score.toFixed(2)}</td>
+                <td class="p-1 border-b dark:border-dark-700 text-right text-gray-400 text-[8px]">(${s.raw.toFixed(2)})</td>
+            </tr>
+        `).join('');
+
+        document.getElementById('robust-page-info').innerText = `${this.robustPage} / ${totalPages}`;
+        document.getElementById('btn-robust-prev').disabled = this.robustPage === 1;
+        document.getElementById('btn-robust-next').disabled = this.robustPage >= totalPages;
+    },
+
+    nextRobustPage() {
+        const totalPages = Math.ceil(this.robustData.length / this.robustPerPage);
+        if (this.robustPage < totalPages) {
+            this.robustPage++;
+            this.renderRobustnessView();
+        }
+    },
+
+    prevRobustPage() {
+        if (this.robustPage > 1) {
+            this.robustPage--;
+            this.renderRobustnessView();
+        }
+    },
+
     renderMonteCarlo(res){
         // Quick Monte Carlo
         const rets = []; for(let i=1; i<res.curve.length; i++) rets.push(res.curve[i]/res.curve[i-1]-1);
