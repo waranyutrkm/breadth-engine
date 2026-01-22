@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Global Macro Breadth Engine v7.0 TURBO (High Performance)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Quant Engine focused on Market Breadth Analysis & Top Rank Alpha - Hyper Performance Edition">
+
+<!-- ================= LIBRARIES ================= -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Sarabun','sans-serif'],
+        mono: ['JetBrains Mono','monospace']
+      },
+      colors: {
+        brand: { 500:'#8B5CF6', 600:'#7C3AED', 400:'#A78BFA' },
+        stock: { 500:'#3b82f6', 600:'#2563eb', 400:'#60a5fa' },
+        dark: { 900:'#0F172A', 800:'#1E293B', 700:'#334155', 600:'#475569' },
+        acc: { green:'#10B981', red:'#EF4444', blue:'#3b82f6', orange: '#F59E0B' }
+      }
+    }
+  }
+}
+</script>
+
+<style>
+body { transition: background-color .3s, color .3s; }
+.glass {
+  background: rgba(255,255,255,.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0,0,0,.05);
+}
+.dark .glass {
+  background: rgba(30,41,59,.95);
+  border-color: #334155;
+}
+.mono { font-family: 'JetBrains Mono', monospace; }
+.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+/* Status Indicators */
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.status-dot.ready { background-color: #10B981; box-shadow: 0 0 5px #10B981; }
+.status-dot.empty { background-color: #EF4444; }
+.status-dot.loading { background-color: #F59E0B; animation: pulse 1s infinite; }
+
+.opt-group { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 10px; position: relative; }
+.dark .opt-group { border-color: #334155; }
+.opt-group-label { position: absolute; top: -7px; left: 8px; background: #fff; padding: 0 4px; font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+.dark .opt-group-label { background: #1E293B; color: #94a3b8; }
+
+.opt-input { background: transparent; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 8px; font-family: 'JetBrains Mono'; font-size: 10px; outline: none; transition: all 0.2s; width: 100%; color: inherit; }
+.dark .opt-input { border-color: #475569; }
+.opt-input:focus { border-color: #8B5CF6; background: rgba(139, 92, 246, 0.05); }
+.opt-label-mini { font-size: 9px; color: #64748b; display: flex; align-items: center; gap: 4px; margin-bottom: 2px; font-weight: 600; }
+
+.mc-stat-box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px; text-align: center; }
+.dark .mc-stat-box { background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.05); }
+
+.range-group { display: flex; gap: 2px; align-items: center; }
+.range-input { text-align: center; padding: 2px 0; }
+.range-sep { font-size: 8px; color: #94a3b8; }
+
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: #8B5CF6; }
+.filter-row th { padding: 4px; background: rgba(0,0,0,0.02); }
+.dark .filter-row th { background: rgba(255,255,255,0.02); }
+.filter-input { width: 100%; background: transparent; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 4px; font-size: 9px; font-family: 'JetBrains Mono'; outline: none; text-align: center; }
+.dark .filter-input { border-color: #475569; color: #eee; }
+.filter-input:focus { border-color: #8B5CF6; }
+
+.health-monitor { font-size: 9px; margin-top: 4px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+
+/* Info Graphic Styles */
+.info-step { @apply flex flex-col items-center p-4 bg-white dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700 shadow-sm transition-all hover:scale-105 hover:shadow-md hover:border-brand-500 relative overflow-hidden; }
+.info-icon { @apply w-12 h-12 flex items-center justify-center rounded-full bg-brand-500/10 text-brand-500 text-xl mb-3; }
+.info-title { @apply text-xs font-bold uppercase text-gray-600 dark:text-gray-300 mb-2 text-center; }
+.info-desc { @apply text-[10px] text-gray-500 text-center leading-relaxed; }
+.arrow-right { @apply hidden md:flex text-gray-300 dark:text-dark-600 text-xl items-center justify-center; }
+.calc-box { @apply bg-gray-50 dark:bg-dark-900/50 p-3 rounded-lg border border-gray-200 dark:border-dark-700 font-mono text-[10px] text-gray-600 dark:text-gray-400 mb-2 relative; }
+.calc-badge { @apply absolute -top-2 -right-2 bg-brand-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold shadow-sm; }
+.var-highlight { @apply text-brand-600 dark:text-brand-400 font-bold; }
+.logic-card { @apply bg-white dark:bg-dark-800 p-4 rounded-xl border border-gray-200 dark:border-dark-700 shadow-sm hover:border-brand-500 transition-colors; }
+.logic-header { @apply flex items-center justify-between mb-2 border-b dark:border-dark-700 pb-2; }
+
+/* Hyper Badge */
+.hyper-badge { background: linear-gradient(135deg, #8B5CF6, #3B82F6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900; font-style: italic; text-shadow: 0 0 10px rgba(139,92,246,0.2); }
+</style>
+</head>
+
+<body class="bg-[#F8FAFC] dark:bg-[#020617] text-[#1E293B] dark:text-[#E2E8F0] min-h-screen font-sans">
+
+<!-- HEADER -->
+<header class="glass sticky top-0 z-40 border-b shadow-sm">
+  <div class="max-w-[1800px] mx-auto px-4 h-14 flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <h1 class="font-bold text-base flex items-center gap-2 text-dark-900 dark:text-white">
+        <span class="text-xl text-brand-500"><i class="fas fa-layer-group"></i></span> 
+        <span>Breadth Engine <span class="hyper-badge text-[10px] ml-1">TURBO v7.0</span></span>
+      </h1>
+      <nav class="hidden md:flex gap-1 ml-4">
+          <button id="btn-tab-dashboard" onclick="UI.switchTab('dashboard')" class="px-3 py-1 text-[10px] font-bold rounded bg-white dark:bg-dark-800 shadow-sm text-brand-600 transition-all">DASHBOARD</button>
+          <button id="btn-tab-docs" onclick="UI.switchTab('docs')" class="px-3 py-1 text-[10px] font-bold rounded text-gray-400 hover:text-brand-500 transition-all">STRATEGY LOGIC & CALC</button>
+      </nav>
+    </div>
+    <div class="flex items-center gap-2">
+        <span id="system-status" class="text-[9px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+            <span class="status-dot empty" id="main-status-dot"></span> System Idle
+        </span>
+    </div>
+    <div class="flex items-center gap-3">
+        <div class="hidden md:flex flex-col items-end mr-2">
+            <span class="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Data Source</span>
+            <span id="market-source-badge" class="text-[9px] font-bold text-brand-500 bg-brand-500/10 px-1 rounded animate-pulse">YAHOO FINANCE</span>
+        </div>
+        <button onclick="UI.exportToCSV()" class="text-[10px] font-bold uppercase tracking-wider bg-green-500/10 text-green-600 px-3 py-1 rounded hover:bg-green-500 hover:text-white transition-all"><i class="fas fa-file-csv"></i> CSV</button>
+        <button onclick="UI.toggleTheme()" class="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-dark-800 hover:text-brand-500"><i class="fas fa-adjust"></i></button>
+    </div>
+  </div>
+</header>
+
+<div class="max-w-[1800px] mx-auto px-4 py-6 grid grid-cols-12 gap-6">
+
+<!-- SIDEBAR -->
+<aside class="col-span-12 xl:col-span-2 space-y-3">
+<div class="glass rounded-xl p-4 border-t-4 border-t-brand-500 sticky top-20 shadow-lg z-30">
+  <div class="mb-3 flex items-center justify-between">
+    <h3 class="text-[10px] font-black uppercase text-gray-500 tracking-widest">Setup v7.0</h3>
+    <span class="text-[8px] bg-brand-500/20 text-brand-600 px-1.5 py-0.5 rounded font-bold">TURBO</span>
+  </div>
+
+  <div class="opt-group bg-blue-50/50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800">
+      <span class="opt-group-label text-blue-500">1. Universe (Breadth)</span>
+      <div class="mb-2">
+           <label class="opt-label-mini">Select Asset Group</label>
+           <select id="quick-add-select" onchange="UI.suggestAsset(this.value);" class="opt-input cursor-pointer mb-2 font-bold text-blue-600 dark:text-blue-400">
+              <option value="PRESET_QQQ" selected>★ QQQ (Top 30 Tech)</option>
+              <option value="PRESET_SPY">★ SPY (Top 30 Leaders)</option>
+              <option value="PRESET_CRYPTO">Crypto (Top 20)</option>
+           </select>
+           
+           <div class="flex gap-1 mb-1">
+            <input id="cfg-add" placeholder="ADD SYMBOL" class="opt-input flex-1 uppercase">
+            <button onclick="UI.addAsset()" class="w-6 h-6 rounded bg-gray-200 dark:bg-dark-700 hover:bg-brand-500 hover:text-white transition-all text-[10px]"><i class="fas fa-plus"></i></button>
+           </div>
+           
+           <div id="asset-list" class="flex flex-wrap gap-1 max-h-[80px] overflow-y-auto custom-scrollbar content-start mb-2"></div>
+           
+           <button onclick="Engine.fetchData()" id="btn-fetch" class="w-full bg-brand-500 hover:bg-brand-600 text-white py-1.5 rounded text-[10px] font-bold uppercase tracking-wider transition-all shadow">
+               <i class="fas fa-cloud-download-alt mr-1"></i> Fetch Data
+           </button>
+           
+           <div id="data-health" class="health-monitor mt-2 border-t dark:border-dark-700 pt-2">
+               <span class="text-[8px] text-gray-400 col-span-2 text-center italic">No data loaded.</span>
+           </div>
+      </div>
+  </div>
+
+  <div class="opt-group border-l-4 border-l-brand-500">
+      <span class="opt-group-label text-brand-600">2. Strategy Logic</span>
+      <div class="mb-2">
+          <label class="opt-label-mini">Trading Mode</label>
+          <select id="cfg-strategy" class="opt-input font-bold text-brand-600 dark:text-brand-400 cursor-pointer">
+            <option value="ALL" selected>★ RUN ALL COMPARISON</option>
+            <optgroup label="Research">
+                <option value="Composite">★ Composite Score v6 (New)</option>
+            </optgroup>
+            <optgroup label="Trade Index (QQQ/SPY)">
+                <option value="Switch">1. Index Switch (On/Off)</option>
+                <option value="Scale">2. Index Scale (0-100%)</option>
+                <option value="Regime">3. Index Regime (Zone)</option>
+                <option value="Contrarian">4. Index Contrarian</option>
+            </optgroup>
+            <optgroup label="Trade Stocks (Alpha)">
+                <option value="Alpha">★ 5. Alpha Rotation (Top Stocks)</option>
+            </optgroup>
+          </select>
+      </div>
+      <div class="mb-2">
+          <label class="opt-label-mini">Weighting Method</label>
+          <select id="cfg-weighting" class="opt-input cursor-pointer">
+            <option value="ALL" selected>★ All Methods</option>
+            <option value="Equal">Equal Weight</option>
+            <option value="Volume">Volume Weighted</option>
+            <option value="Trend">Trend Momentum</option>
+            <option value="InvVol">Inverse Volatility</option>
+          </select>
+      </div>
+      <div class="mb-2">
+          <label class="opt-label-mini">Benchmark (Index)</label>
+          <input id="cfg-bench" value="QQQ" class="opt-input uppercase text-center font-bold text-stock-500">
+      </div>
+      
+      <!-- Alpha Config -->
+      <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded p-2 mt-2">
+          <label class="opt-label-mini text-acc-orange flex justify-between w-full">
+              Alpha: Top Rank Size
+              <span class="text-[8px] opacity-70 bg-orange-200 dark:bg-orange-800 px-1 rounded">Strat 5 Only</span>
+          </label>
+          <select id="cfg-top-n" class="opt-input mt-1 font-bold text-acc-orange cursor-pointer bg-white dark:bg-dark-900 text-center">
+              <option value="5" selected>Top 5 Assets (from Universe)</option>
+              <option value="10">Top 10 Assets (from Universe)</option>
+              <option value="15">Top 15 Assets (from Universe)</option>
+          </select>
+          <div class="text-[7px] text-gray-400 mt-1 text-center font-mono">
+              *Condition: Breadth > 50%
+          </div>
+      </div>
+  </div>
+
+  <div class="opt-group">
+      <span class="opt-group-label">3. Scan Params (Grid)</span>
+      <div class="mb-2">
+          <label class="opt-label-mini justify-between">Lookback (Days)</label>
+          <div class="range-group">
+              <input id="cfg-lb-start" value="20" type="number" class="opt-input range-input" placeholder="S">
+              <span class="range-sep">~</span>
+              <input id="cfg-lb-end" value="60" type="number" class="opt-input range-input" placeholder="E">
+              <span class="range-sep">+</span>
+              <input id="cfg-lb-step" value="20" type="number" class="opt-input range-input" placeholder="St">
+          </div>
+      </div>
+      <div>
+          <label class="opt-label-mini justify-between">Rebalance (Days)</label>
+          <div class="range-group">
+              <input id="cfg-rb-start" value="10" type="number" class="opt-input range-input" placeholder="S">
+              <span class="range-sep">~</span>
+              <input id="cfg-rb-end" value="20" type="number" class="opt-input range-input" placeholder="E">
+              <span class="range-sep">+</span>
+              <input id="cfg-rb-step" value="10" type="number" class="opt-input range-input" placeholder="St">
+          </div>
+      </div>
+  </div>
+
+  <div class="opt-group">
+      <span class="opt-group-label">4. Money & Dates</span>
+      <div class="grid grid-cols-2 gap-1 mb-2">
+          <div><label class="opt-label-mini">Start</label><input type="date" id="cfg-start" class="opt-input px-0 text-center"></div>
+          <div><label class="opt-label-mini">End</label><input type="date" id="cfg-end" class="opt-input px-0 text-center"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-1 mb-2">
+          <div><label class="opt-label-mini">Initial $</label><input id="cfg-initial" value="10000" type="number" class="opt-input text-center"></div>
+          <div><label class="opt-label-mini">DCA $</label><input id="cfg-dca" value="0" type="number" class="opt-input text-center text-acc-green"></div>
+      </div>
+      <div class="grid grid-cols-3 gap-1">
+          <div><label class="opt-label-mini">Buy %</label><input id="cfg-buy-fee" value="0.1" type="number" step="0.01" class="opt-input text-center text-red-500"></div>
+          <div><label class="opt-label-mini">Sell %</label><input id="cfg-sell-fee" value="0.1" type="number" step="0.01" class="opt-input text-center text-red-500"></div>
+          <div><label class="opt-label-mini">Mgmt %</label><input id="cfg-mgmt-fee" value="0.0" type="number" step="0.1" class="opt-input text-center text-blue-500"></div>
+      </div>
+  </div>
+
+  <button onclick="Engine.runSimulation()" id="btn-run" class="w-full bg-gradient-to-r from-brand-600 to-brand-500 py-3 mt-1 rounded-lg font-bold text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-xs tracking-wide uppercase opacity-50 cursor-not-allowed" disabled>
+    <i class="fas fa-bolt"></i> <span>Turbo Run</span>
+  </button>
+  
+  <!-- PROGRESS BAR -->
+  <div id="run-progress-container" class="w-full bg-gray-200 rounded-full h-1.5 mt-3 hidden dark:bg-dark-700 overflow-hidden relative">
+      <div id="run-progress-bar" class="bg-brand-500 h-1.5 rounded-full transition-all duration-100 ease-linear" style="width: 0%"></div>
+  </div>
+    
+  <div id="status-log" class="mt-2 text-[9px] font-mono text-gray-400 h-[100px] overflow-y-auto bg-black/10 rounded p-2 hidden"></div>
+</div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="col-span-12 xl:col-span-10 space-y-6">
+
+    <!-- DASHBOARD TAB -->
+    <div id="view-dashboard" class="space-y-6 animate-fade-in">
+        <!-- KPIs -->
+        <div class="relative">
+            <div class="absolute -top-3 right-0 text-[9px] text-gray-400 flex items-center gap-1">
+                KEY PERFORMANCE INDICATORS
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+              <!-- Cards -->
+              <div class="glass p-4 rounded-xl border-l-4 border-l-acc-green shadow-sm kpi-card">
+                <div class="text-[9px] uppercase font-bold text-gray-400 mb-1">Net CAGR</div>
+                <div id="kpi-cagr" class="text-xl font-bold mono text-dark-900 dark:text-white">-</div>
+                <div id="bench-cagr" class="text-[9px] text-gray-400 mt-1">Bench: -</div>
+              </div>
+
+              <div class="glass p-4 rounded-xl border-l-4 border-l-stock-500 shadow-sm kpi-card">
+                <div class="text-[9px] uppercase font-bold text-gray-400 mb-1">Sharpe Ratio</div>
+                <div id="kpi-sharpe" class="text-xl font-bold mono text-dark-900 dark:text-white">-</div>
+                <div id="bench-sharpe" class="text-[9px] text-gray-400 mt-1">Bench: -</div>
+              </div>
+
+              <div class="glass p-4 rounded-xl border-l-4 border-l-blue-500 shadow-sm kpi-card">
+                <div class="text-[9px] uppercase font-bold text-gray-400 mb-1">Sortino Ratio</div>
+                <div id="kpi-sortino" class="text-xl font-bold mono text-blue-500">-</div>
+                <div id="bench-sortino" class="text-[9px] text-gray-400 mt-1">Bench: -</div>
+              </div>
+
+              <div class="glass p-4 rounded-xl border-l-4 border-l-purple-500 shadow-sm kpi-card">
+                <div class="text-[9px] uppercase font-bold text-gray-400 mb-1">Calmar Ratio</div>
+                <div id="kpi-calmar" class="text-xl font-bold mono text-purple-500">-</div>
+                <div id="bench-calmar" class="text-[9px] text-gray-400 mt-1">Bench: -</div>
+              </div>
+
+              <div class="glass p-4 rounded-xl border-l-4 border-l-acc-red shadow-sm kpi-card">
+                <div class="text-[9px] uppercase font-bold text-gray-400 mb-1">Max Drawdown</div>
+                <div id="kpi-mdd" class="text-xl font-bold mono text-acc-red">-</div>
+                <div id="bench-mdd" class="text-[9px] text-gray-400 mt-1">Bench: -</div>
+              </div>
+
+              <div class="glass p-4 rounded-xl border-l-4 border-l-gray-400 shadow-sm kpi-card">
+                <div class="text-[9px] uppercase font-bold text-gray-400 mb-1">Time in Market</div>
+                <div id="kpi-winrate" class="text-xl font-bold mono text-gray-500 dark:text-gray-300">-</div>
+                <div class="text-[9px] text-gray-400 mt-1">Avg Exposure</div>
+              </div>
+            </div>
+        </div>
+
+        <!-- Main Chart -->
+        <div class="glass p-6 rounded-2xl shadow-xl space-y-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <h3 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Growth & Breadth Analysis</h3>
+                    <p class="text-[9px] text-gray-400 mono mt-0.5 ml-2" id="chart-subtitle">Waiting for simulation...</p>
+                </div>
+                <button onclick="UI.toggleLog()" id="btn-log-toggle" class="text-[9px] font-bold bg-gray-100 dark:bg-dark-800 px-3 py-1 rounded border dark:border-dark-700 mono text-gray-400 hover:text-brand-500">LOG: OFF</button>
+            </div>
+            <div class="h-[320px] w-full"><canvas id="chart-equity"></canvas></div>
+            <div class="h-[100px] w-full border-t dark:border-dark-700 pt-2 relative">
+                <div class="absolute top-2 left-2 text-[9px] font-bold text-brand-500 uppercase bg-brand-500/10 px-1 rounded">Market Breadth (%)</div>
+                <canvas id="chart-drawdown"></canvas>
+            </div>
+        </div>
+
+        <!-- Matrix Table -->
+        <div class="glass rounded-2xl overflow-hidden shadow-lg border border-gray-100 dark:border-dark-700 flex flex-col min-h-[500px]">
+            <div class="px-6 py-4 border-b dark:border-dark-700 bg-gray-50/50 dark:bg-dark-800/50 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <h3 class="text-xs font-black uppercase text-gray-600 dark:text-gray-300 tracking-widest">Strategy Matrix</h3>
+                </div>
+                <button onclick="UI.clearFilters()" class="text-[9px] bg-white dark:bg-dark-700 px-3 py-1 rounded border dark:border-dark-600 font-bold hover:text-brand-500">RESET</button>
+            </div>
+            <div class="overflow-x-auto custom-scrollbar flex-1">
+              <table class="w-full text-[10px] mono border-collapse" id="batch-matrix-table">
+                <thead class="bg-gray-100 dark:bg-dark-900 text-gray-400 text-right sticky top-0 z-10 shadow-sm">
+                  <tr>
+                    <th class="text-left p-3 sortable" onclick="UI.sortBatch('stratFull')">Strategy <i class="fas fa-sort"></i></th>
+                    <th class="text-left p-3 sortable" onclick="UI.sortBatch('method')">Weighting <i class="fas fa-sort"></i></th>
+                    <th class="p-3 sortable" onclick="UI.sortBatch('lb')">LB (D) <i class="fas fa-sort"></i></th>
+                    <th class="p-3 sortable" onclick="UI.sortBatch('rb')">RB (D) <i class="fas fa-sort"></i></th>
+                    <th class="p-3 sortable" onclick="UI.sortBatch('cagr')">CAGR <i class="fas fa-sort"></i></th>
+                    <th class="p-3 sortable" onclick="UI.sortBatch('sharpe')">Sharpe <i class="fas fa-sort"></i></th>
+                    <th class="p-3 sortable" onclick="UI.sortBatch('mdd')">MDD <i class="fas fa-sort"></i></th>
+                  </tr>
+                  <!-- Filter Row -->
+                  <tr class="filter-row">
+                      <th><select id="f-strat" onchange="UI.applyBatchFilters()" class="filter-input text-left"><option value="">All</option></select></th>
+                      <th><select id="f-method" onchange="UI.applyBatchFilters()" class="filter-input text-left"><option value="">All</option></select></th>
+                      <th><input id="f-lb" onkeyup="UI.applyBatchFilters()" class="filter-input" placeholder=">="></th>
+                      <th><input id="f-rb" onkeyup="UI.applyBatchFilters()" class="filter-input" placeholder=">="></th>
+                      <th><input id="f-cagr" onkeyup="UI.applyBatchFilters()" class="filter-input" placeholder=">="></th>
+                      <th><input id="f-sharpe" onkeyup="UI.applyBatchFilters()" class="filter-input" placeholder=">="></th>
+                      <th><input id="f-mdd" onkeyup="UI.applyBatchFilters()" class="filter-input" placeholder="<="></th>
+                  </tr>
+                </thead>
+                <tbody id="batch-table-body" class="divide-y dark:divide-dark-700 text-right font-medium"></tbody>
+                <tfoot id="batch-table-foot" class="bg-gray-50 dark:bg-dark-800 font-bold text-gray-500 border-t-2 border-gray-200 dark:border-dark-600 sticky bottom-0 z-10"></tfoot>
+              </table>
+            </div>
+             <div class="px-4 py-2 border-t dark:border-dark-700 bg-gray-50 dark:bg-dark-800 flex justify-between items-center text-[9px] text-gray-500 font-bold">
+                <span id="pagination-info">0-0 of 0</span>
+                <div class="flex gap-1"><button onclick="UI.prevPage()" id="btn-prev" class="pagination-btn" disabled>Prev</button><button onclick="UI.nextPage()" id="btn-next" class="pagination-btn" disabled>Next</button></div>
+            </div>
+        </div>
+        
+        <!-- Surface & Distribution Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- 4D Surface -->
+            <div class="glass p-6 rounded-2xl shadow-xl h-[500px] flex flex-col relative overflow-hidden">
+                <div class="flex justify-between items-center mb-2 z-10 border-b dark:border-dark-700 pb-2">
+                    <div class="flex items-center gap-2">
+                        <h3 class="font-bold text-xs flex items-center gap-2"><span>4D Hyper-Parameter</span><span class="text-[8px] bg-brand-500 text-white px-1.5 rounded font-mono shadow">Rolling Metric</span></h3>
+                    </div>
+                    <div class="flex gap-2">
+                        <select id="surface-metric" onchange="UI.renderSurface()" class="bg-gray-100 dark:bg-dark-700 text-[9px] rounded px-2 py-1 font-bold outline-none"><option value="sharpe">Sharpe</option><option value="cagr">CAGR</option><option value="mdd">MDD</option></select>
+                    </div>
+                </div>
+                <div id="viz-surface" class="flex-1 z-10"></div>
+            </div>
+
+            <!-- Distribution Analysis -->
+            <div class="glass p-6 rounded-2xl shadow-xl h-[500px] flex flex-col relative overflow-hidden">
+                <div class="flex justify-between items-center mb-2 z-10 border-b dark:border-dark-700 pb-2">
+                    <div class="flex items-center gap-2">
+                        <h3 class="font-bold text-xs">📊 Grid Distribution & Robustness (SD Zones)</h3>
+                    </div>
+                </div>
+                <div class="flex flex-col h-full gap-4">
+                    <div id="viz-dist" class="h-full z-10"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monte Carlo & Logs -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="glass p-6 rounded-2xl shadow-xl h-[400px] flex flex-col relative overflow-hidden">
+                <div class="flex justify-between items-center mb-2 z-10 border-b dark:border-dark-700 pb-2">
+                    <div class="flex items-center gap-2">
+                        <h3 class="font-bold text-xs">🎲 Monte Carlo Forecast</h3>
+                    </div>
+                    <div class="flex items-center gap-1"><span class="text-[9px] text-gray-400">Years:</span><input type="number" id="cfg-mc-years" value="1" min="1" max="5" class="w-8 text-center text-[9px] bg-gray-100 dark:bg-dark-700 rounded border dark:border-dark-600"><button onclick="UI.runMonteCarlo()" class="text-[9px] bg-brand-500 text-white px-2 py-0.5 rounded font-bold hover:scale-105 shadow">Sim</button></div>
+                </div>
+                <div class="grid grid-cols-4 gap-2 mb-2 z-10">
+                    <div class="mc-stat-box"><div class="text-[8px] text-gray-400 uppercase">Avg Sharpe</div><div id="mc-avg-sharpe" class="text-[10px] font-bold text-brand-500">-</div></div>
+                    <div class="mc-stat-box"><div class="text-[8px] text-gray-400 uppercase">Avg CAGR</div><div id="mc-avg-cagr" class="text-[10px] font-bold text-acc-green">-</div></div>
+                    <div class="mc-stat-box"><div class="text-[8px] text-gray-400 uppercase">Avg Breadth</div><div id="mc-avg-vol" class="text-[10px] font-bold text-gray-300">-</div></div>
+                    <div class="mc-stat-box"><div class="text-[8px] text-gray-400 uppercase">Avg MDD</div><div id="mc-avg-mdd" class="text-[10px] font-bold text-acc-red">-</div></div>
+                </div>
+                <div id="viz-monte-dashboard" class="flex-1 z-10"></div>
+            </div>
+
+            <div class="glass rounded-2xl overflow-hidden shadow-lg border border-gray-100 dark:border-dark-700 h-[400px] flex flex-col">
+                <div class="px-6 py-4 border-b dark:border-dark-700 bg-gray-50/30 flex items-center gap-2 sticky top-0 z-10 backdrop-blur-md">
+                    <h3 class="text-xs font-bold uppercase text-gray-500 tracking-widest">Detailed Logs</h3>
+                    <span class="text-[8px] text-brand-500 font-mono">(Action / Breadth / Holdings / NAV)</span>
+                </div>
+                <div class="overflow-y-auto custom-scrollbar flex-1">
+                    <table class="w-full text-[10px] mono relative">
+                        <thead class="bg-gray-100 dark:bg-dark-800 text-gray-500 sticky top-0 z-10">
+                            <tr><th class="p-2 text-left">Date/Act</th><th class="p-2 text-left">Breadth</th><th class="p-2 text-left">Holdings</th><th class="p-2 text-right">NAV</th></tr>
+                        </thead>
+                        <tbody id="log-table" class="divide-y dark:divide-dark-700"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DOCS TAB (EXPANDED - INFOGRAPHIC STYLE) -->
+    <div id="view-docs" class="space-y-8 animate-fade-in hidden">
+        <div class="text-center mb-8">
+            <span class="bg-brand-500 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-widest">Education v7.0</span>
+            <h1 class="text-2xl font-bold text-dark-900 dark:text-white mt-2">ขั้นตอนการทำงานและสูตรคำนวณ (Workflow & Logic)</h1>
+            <p class="text-gray-500 text-xs mt-2">อธิบายกระบวนการทำงานของระบบและเงื่อนไขการเทรดทุกรูปแบบอย่างละเอียด</p>
+        </div>
+
+        <!-- 1. SYSTEM WORKFLOW INFOGRAPHIC -->
+        <div class="glass p-6 rounded-2xl shadow-sm border dark:border-dark-700 mb-6">
+            <h3 class="text-sm font-bold uppercase text-brand-500 tracking-widest mb-6 border-b dark:border-dark-600 pb-2"><i class="fas fa-network-wired mr-2"></i> System Workflow (ขั้นตอนการทำงาน)</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <!-- Step 1 -->
+                <div class="info-step group">
+                    <div class="info-icon"><i class="fas fa-cloud-download-alt"></i></div>
+                    <div class="info-title">1. Data Ingestion</div>
+                    <div class="info-desc">
+                        ดึงราคา (Price) และปริมาณ (Volume) ย้อนหลัง 5 ปี จาก Yahoo Finance แล้ว Cache ลงในหน่วยความจำ
+                    </div>
+                </div>
+                
+                <!-- Arrow -->
+                <div class="arrow-right"><i class="fas fa-chevron-right"></i></div>
+                
+                <!-- Step 2 -->
+                <div class="info-step group">
+                    <div class="info-icon"><i class="fas fa-calculator"></i></div>
+                    <div class="info-title">2. Matrix Prep</div>
+                    <div class="info-desc">
+                        แปลงข้อมูลดิบเป็น Matrix ของ Indicators (RSI, MACD, ROC) เพื่อความรวดเร็วในการคำนวณแบบขนาน
+                    </div>
+                </div>
+
+                <!-- Arrow -->
+                <div class="arrow-right"><i class="fas fa-chevron-right"></i></div>
+
+                <!-- Step 3 -->
+                <div class="info-step group">
+                    <div class="info-icon"><i class="fas fa-chart-pie"></i></div>
+                    <div class="info-title">3. Breadth Calc</div>
+                    <div class="info-desc">
+                        คำนวณ Market Breadth จากหุ้นทั้งหมดใน Universe ตามเงื่อนไข (Composite Score, Trend, etc.)
+                    </div>
+                </div>
+
+                <!-- Arrow -->
+                <div class="arrow-right"><i class="fas fa-chevron-right"></i></div>
+
+                <!-- Step 4 -->
+                <div class="info-step group">
+                    <div class="info-icon"><i class="fas fa-bolt"></i></div>
+                    <div class="info-title">4. Hyper Sim</div>
+                    <div class="info-desc">
+                        รัน Backtest บน Grid Parameters (Lookback, Rebalance) นับพันรอบเพื่อหาค่าที่ดีที่สุด
+                    </div>
+                </div>
+
+                <!-- Arrow -->
+                <div class="arrow-right"><i class="fas fa-chevron-right"></i></div>
+
+                <!-- Step 5 -->
+                <div class="info-step group">
+                    <div class="info-icon"><i class="fas fa-trophy"></i></div>
+                    <div class="info-title">5. Evaluation</div>
+                    <div class="info-desc">
+                        วัดผลด้วย Sharpe Ratio, CAGR และ MDD พร้อมแสดง Distribution และ SD Zones
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- 2. TRADING STRATEGY LOGIC (FULL) -->
+            <div class="glass p-6 rounded-2xl shadow-sm border dark:border-dark-700">
+                 <h3 class="text-sm font-bold uppercase text-brand-500 tracking-widest mb-4 border-b dark:border-dark-600 pb-2"><i class="fas fa-microchip mr-2"></i> Strategy Logic (เงื่อนไขการเทรด)</h3>
+                 
+                 <div class="space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
+                     <!-- 2.1 Composite Score -->
+                     <div class="logic-card border-brand-200 dark:border-brand-900 bg-brand-50/50 dark:bg-brand-900/10">
+                         <div class="logic-header">
+                             <div class="flex items-center gap-2">
+                                 <span class="bg-brand-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold">Recommended</span>
+                                 <h4 class="text-xs font-bold text-gray-700 dark:text-gray-300">Composite Score v6</h4>
+                             </div>
+                             <i class="fas fa-star text-brand-500 text-xs"></i>
+                         </div>
+                         <div class="calc-box">
+                             Score = (0.3×<span class="var-highlight">Trend</span>) + (0.3×<span class="var-highlight">Mom</span>) + (0.2×<span class="var-highlight">Vol</span>) + (0.2×<span class="var-highlight">Flow</span>)
+                         </div>
+                         <ul class="text-[9px] text-gray-500 space-y-1 list-disc pl-4">
+                             <li><b>Bull Zone (Score >= 0.65):</b> Exposure 100%</li>
+                             <li><b>Distribution (Score >= 0.40):</b> Exposure 50%</li>
+                             <li><b>Bear Zone (Score < 0.40):</b> Exposure 0% (Cash)</li>
+                         </ul>
+                     </div>
+
+                     <!-- 2.2 Index Switch -->
+                     <div class="logic-card">
+                         <div class="logic-header"><h4 class="text-xs font-bold text-gray-700 dark:text-gray-300">1. Index Switch (Binary)</h4></div>
+                         <div class="calc-box">Signal = Breadth > 50% ? 1 : 0</div>
+                         <p class="text-[9px] text-gray-500">
+                             กลยุทธ์พื้นฐาน: ถ้าหุ้นเกินครึ่งตลาดเป็นขาขึ้น ให้ถือ Index 100% ถ้าไม่ถึง ให้ถือเงินสด 100%
+                         </p>
+                     </div>
+
+                     <!-- 2.3 Index Scale -->
+                     <div class="logic-card">
+                         <div class="logic-header"><h4 class="text-xs font-bold text-gray-700 dark:text-gray-300">2. Index Scale (Linear)</h4></div>
+                         <div class="calc-box">Exposure = Breadth Value (0.0 - 1.0)</div>
+                         <p class="text-[9px] text-gray-500">
+                             ปรับพอร์ตตามสัดส่วนจริง: ถ้า Breadth 70% ก็ถือหุ้น 70% ถือเงินสด 30% (ลดความผันผวนได้ดี)
+                         </p>
+                     </div>
+
+                     <!-- 2.4 Index Regime -->
+                     <div class="logic-card">
+                         <div class="logic-header"><h4 class="text-xs font-bold text-gray-700 dark:text-gray-300">3. Index Regime (Zones)</h4></div>
+                         <div class="calc-box">
+                             > 60%: Buy 100% | 40-60%: Hold 50% | < 40%: Cash
+                         </div>
+                         <p class="text-[9px] text-gray-500">
+                             แบ่งตลาดเป็น 3 โซน: ขาขึ้นชัดเจน, ไซด์เวย์ (ลดพอร์ตครึ่งหนึ่ง), และขาลง
+                         </p>
+                     </div>
+
+                     <!-- 2.5 Contrarian -->
+                     <div class="logic-card">
+                         <div class="logic-header"><h4 class="text-xs font-bold text-gray-700 dark:text-gray-300">4. Contrarian (Mean Reversion)</h4></div>
+                         <div class="calc-box">Signal = Breadth < 20% ? 1 : 0</div>
+                         <p class="text-[9px] text-gray-500">
+                             สวนตลาด: ซื้อเมื่อตลาด Oversold อย่างหนัก (Breadth ต่ำกว่า 20%) และขายเมื่อตลาดฟื้นตัว
+                         </p>
+                     </div>
+
+                     <!-- 2.6 Alpha Rotation -->
+                     <div class="logic-card border-l-4 border-l-acc-orange">
+                         <div class="logic-header"><h4 class="text-xs font-bold text-acc-orange">5. Alpha Rotation (Stock Picking)</h4></div>
+                         <div class="calc-box">
+                             If Breadth > 50%: Buy Top N Assets by ROC
+                         </div>
+                         <p class="text-[9px] text-gray-500">
+                             เมื่อตลาดเป็นขาขึ้น จะไม่ซื้อ Index แต่จะคัดเลือก Assets รายตัวที่มี Momentum สูงสุด (Top N) เข้าพอร์ตแทน
+                         </p>
+                     </div>
+                 </div>
+            </div>
+
+            <div class="space-y-6">
+                <!-- 3. WEIGHTING METHODS -->
+                <div class="glass p-6 rounded-2xl shadow-sm border dark:border-dark-700">
+                    <h3 class="text-sm font-bold uppercase text-acc-blue tracking-widest mb-4 border-b dark:border-dark-600 pb-2"><i class="fas fa-balance-scale mr-2"></i> Weighting Logic (การคำนวณน้ำหนัก)</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                         <div class="bg-gray-50 dark:bg-dark-800 p-3 rounded border dark:border-dark-700">
+                             <div class="text-[10px] font-bold text-blue-500 mb-1">Equal Weight</div>
+                             <div class="text-[9px] text-gray-500">ทุกตัวมีค่าเท่ากัน (1) นับจำนวนหุ้นที่ผ่านเกณฑ์หารด้วยจำนวนทั้งหมด</div>
+                         </div>
+                         <div class="bg-gray-50 dark:bg-dark-800 p-3 rounded border dark:border-dark-700">
+                             <div class="text-[10px] font-bold text-blue-500 mb-1">Volume Weighted</div>
+                             <div class="text-[9px] text-gray-500">ให้ความสำคัญกับหุ้นที่มี Volume สูง (Market Movers) มากกว่าหุ้นเล็ก</div>
+                         </div>
+                         <div class="bg-gray-50 dark:bg-dark-800 p-3 rounded border dark:border-dark-700">
+                             <div class="text-[10px] font-bold text-blue-500 mb-1">Trend Momentum</div>
+                             <div class="text-[9px] text-gray-500">Weight = Abs(ROC) ยิ่งวิ่งแรง ยิ่งมีผลต่อค่า Breadth มาก</div>
+                         </div>
+                         <div class="bg-gray-50 dark:bg-dark-800 p-3 rounded border dark:border-dark-700">
+                             <div class="text-[10px] font-bold text-blue-500 mb-1">Inverse Volatility</div>
+                             <div class="text-[9px] text-gray-500">Weight = 1/Vol ให้ความสำคัญกับหุ้นที่นิ่งเสถียร มากกว่าหุ้นผันผวน</div>
+                         </div>
+                    </div>
+                </div>
+
+                <!-- 4. METRICS -->
+                <div class="glass p-6 rounded-2xl shadow-sm border dark:border-dark-700">
+                    <h3 class="text-sm font-bold uppercase text-acc-green tracking-widest mb-4 border-b dark:border-dark-600 pb-2"><i class="fas fa-ruler-combined mr-2"></i> Performance Metrics</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1">CAGR & Sharpe</h4>
+                            <div class="calc-box">CAGR = (End/Start)^(1/Y) - 1</div>
+                            <div class="calc-box">Sharpe = (Ret - Rf) / StdDev</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- LOADER -->
+<div id="loader" class="fixed inset-0 bg-white/95 dark:bg-dark-900/95 z-[100] hidden flex flex-col items-center justify-center backdrop-blur-md">
+    <div class="w-16 h-16 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+    <p class="mt-6 font-bold mono text-sm tracking-[0.3em] animate-pulse uppercase" id="loader-text">PROCESSING...</p>
+</div>
+
+<script>
+/* =========================================================
+   QUANT ENGINE HYPER v7.0 TURBO (Parallel & Async)
+========================================================= */
+
+const REGIONS = {
+    "Global": { tickers: [] }, 
+    "US": { tickers: ["SPY", "QQQ", "IWM", "DIA"] },
+    "EU": { tickers: ["VGK", "EZU", "EWQ", "EWG"] },
+    "Asia": { tickers: ["EWJ", "MCHI", "EWY", "EWT"] },
+    "Emerging": { tickers: ["EEM", "VWO", "EWZ", "EWW"] }
+};
+const PRESETS = {
+    QQQ: ["AAPL", "MSFT", "NVDA", "AMZN", "META", "GOOGL", "GOOG", "TSLA", "AVGO", "COST", "PEP", "ADBE", "CSCO", "NFLX", "AMD", "TMUS", "INTC", "QCOM", "TXN", "AMGN", "HON"],
+    SPY: ["AAPL", "MSFT", "NVDA", "AMZN", "META", "GOOGL", "BRK-B", "LLY", "AVGO", "JPM", "TSLA", "UNH", "V", "XOM", "MA", "PG", "COST", "JNJ", "HD", "MRK"],
+    CRYPTO: ["BTC-USD", "ETH-USD", "BNB-USD", "SOL-USD", "XRP-USD", "ADA-USD", "DOGE-USD", "AVAX-USD", "LINK-USD", "DOT-USD", "TRX-USD", "MATIC-USD", "LTC-USD", "SHIB-USD", "UNI-USD", "BCH-USD", "ATOM-USD", "XLM-USD", "NEAR-USD", "FIL-USD"]
+};
+const STRAT_NAMES = { Composite: "Composite Score v6", Switch: "Index Switch", Scale: "Index Scale", Regime: "Index Regime", Contrarian: "Contrarian", Alpha: "Alpha Rotation" };
+const WEIGHT_NAMES = { Equal: "Equal Weight", Volume: "Volume Weighted", Trend: "Trend Momentum", InvVol: "Inverse Volatility" };
+const PROXIES = [ url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, url => `https://corsproxy.io/?${encodeURIComponent(url)}` ];
+
+class QuantEngine {
+  constructor(){
+    this.universe = [...PRESETS.QQQ];
+    this.allData = {}; 
+    this.dates = [];
+    this.results = [];
+    this.tradingDays = 252;
+    this.dataStatus = {}; 
+    
+    // Hyper Core Storage
+    this.mat = { prices: [], vols: [], invVol: [], roc: {}, macd: [], volRegime: [] };
+    this.breadthCache = {}; 
+  }
+
+  async fetchAsset(symbol) {
+    // 1. Try Fetch
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol.toUpperCase()}?interval=1d&range=5y`;
+    for(let p of PROXIES) {
+        try {
+            const res = await fetch(p(url));
+            if(!res.ok) continue;
+            const json = await res.json();
+            const result = json.chart.result[0];
+            const closes = result.indicators.quote[0].close;
+            const volumes = result.indicators.quote[0].volume;
+            const times = result.timestamp;
+            const clean = [];
+            for(let i=0; i<times.length; i++) {
+                if(closes[i] != null) clean.push({ date: new Date(times[i]*1000).toISOString().slice(0,10), price: closes[i], volume: volumes ? (volumes[i]||0) : 0 });
+            }
+            if(clean.length > 50) return { symbol, data: clean };
+        } catch(e) {}
+    }
+    return { symbol, data: null };
+  }
+
+  async fetchData() {
+    UI.loading(true, "FETCHING DATA (TURBO)...");
+    const cfg = UI.getParams();
+    const desired = [...new Set([...this.universe, cfg.bench])];
+    
+    // Increased Batch Size to 10
+    const BATCH = 10;
+    for(let i=0; i<desired.length; i+=BATCH) {
+        const batch = desired.slice(i, i+BATCH).map(s => this.fetchAsset(s));
+        const res = await Promise.all(batch);
+        res.forEach(r => {
+            if(r.data) {
+                this.allData[r.symbol] = r.data;
+                this.dataStatus[r.symbol] = 'ok';
+            }
+        });
+        UI.updateProgress(((i+BATCH)/desired.length)*100);
+    }
+    
+    // Align
+    const benchKey = cfg.bench;
+    if(!this.allData[benchKey]) { alert("Benchmark Data Failed"); UI.loading(false); return; }
+    
+    this.dates = this.allData[benchKey].map(d => d.date).sort();
+    const dateMap = {}; this.dates.forEach((d,i) => dateMap[d] = i);
+    
+    // Normalize Data Map for fast access
+    for(let s in this.allData) {
+        const raw = this.allData[s];
+        const pArr = new Array(this.dates.length).fill(0);
+        const vArr = new Array(this.dates.length).fill(0);
+        const rawMap = {}; raw.forEach(r => { rawMap[r.date] = r; });
+        let lastP = 0, lastV = 0;
+        for(let i=0; i<this.dates.length; i++) {
+            const d = this.dates[i];
+            if(rawMap[d]) { lastP = rawMap[d].price; lastV = rawMap[d].volume; }
+            pArr[i] = lastP; vArr[i] = lastV;
+        }
+        this.allData[s] = { prices: pArr, volumes: vArr };
+    }
+    
+    UI.renderHealthMonitor();
+    UI.loading(false);
+    UI.enableRunButton(true);
+  }
+  
+  calcEMA(arr, period) {
+      const k = 2 / (period + 1);
+      const ema = new Float32Array(arr.length);
+      ema[0] = arr[0];
+      for(let i=1; i<arr.length; i++) ema[i] = (arr[i] - ema[i-1]) * k + ema[i-1];
+      return ema;
+  }
+  
+  prepareMatrices(universe, len) {
+      // 1. Prices & Volumes
+      this.mat.prices = universe.map(s => new Float32Array(this.allData[s].prices));
+      this.mat.vols = universe.map(s => new Float32Array(this.allData[s].volumes));
+      
+      // 2. InvVol (Inverse Volatility) + VolRegime (Boolean)
+      this.mat.invVol = []; 
+      this.mat.volRegime = [];
+      
+      universe.forEach((s, idx) => {
+          const p = this.allData[s].prices;
+          const iv = new Float32Array(len);
+          const ret = new Float32Array(len);
+          const volArr = new Float32Array(len);
+          
+          for(let t=1; t<len; t++) ret[t] = (p[t] > 0 && p[t-1] > 0) ? (p[t]-p[t-1])/p[t-1] : 0;
+          
+          for(let t=20; t<len; t++) {
+              let sum=0; for(let k=0; k<20; k++) sum += ret[t-k]*ret[t-k];
+              const vol = Math.sqrt(sum/20) || 0.01;
+              volArr[t] = vol;
+              iv[t] = 1/vol;
+          }
+          this.mat.invVol.push(iv);
+          
+          // Calculate SMA of Vol for VolRegime (ATR Proxy logic)
+          const volSMA = new Float32Array(len);
+          for(let t=40; t<len; t++) {
+             let s=0; for(let k=0; k<20; k++) s += volArr[t-k];
+             volSMA[t] = s/20;
+          }
+          const vReg = new Int8Array(len);
+          for(let t=0; t<len; t++) vReg[t] = volArr[t] > volSMA[t] ? 1 : 0;
+          this.mat.volRegime.push(vReg);
+      });
+
+      // 3. MACD for Trend Breadth
+      this.mat.macd = universe.map((s, idx) => {
+         const p = this.mat.prices[idx];
+         const ema12 = this.calcEMA(p, 12);
+         const ema26 = this.calcEMA(p, 26);
+         const macdLine = new Float32Array(len);
+         for(let t=0; t<len; t++) macdLine[t] = ema12[t] - ema26[t];
+         const signalLine = this.calcEMA(macdLine, 9);
+         
+         const trendBool = new Int8Array(len);
+         for(let t=0; t<len; t++) trendBool[t] = (macdLine[t] > 0 && macdLine[t] > signalLine[t]) ? 1 : 0;
+         return trendBool;
+      });
+  }
+
+  calcBreadthMatrix(universe, methods, lookbacks, len) {
+      this.breadthCache = {};
+      this.mat.roc = {};
+      
+      // Pre-calc ROC for all Lookbacks
+      for(const lb of lookbacks) {
+          const rocMat = [];
+          for(let i=0; i<universe.length; i++) {
+              const r = new Float32Array(len);
+              const p = this.mat.prices[i];
+              for(let t=lb; t<len; t++) {
+                  if(p[t-lb] > 0) r[t] = (p[t] - p[t-lb]) / p[t-lb];
+              }
+              rocMat.push(r);
+          }
+          this.mat.roc[lb] = rocMat;
+      }
+
+      // Pre-calc Standard Breadths
+      for(const m of methods) {
+          this.breadthCache[m] = {};
+          for(const lb of lookbacks) {
+              const b = new Float32Array(len);
+              const rocMat = this.mat.roc[lb];
+              
+              for(let t=lb; t<len; t++) {
+                  let num = 0, den = 0;
+                  for(let i=0; i<universe.length; i++) {
+                      if(rocMat[i][t] === 0) continue; 
+                      const isUp = rocMat[i][t] > 0;
+                      let w = 1;
+                      if(m === 'Volume') w = this.mat.vols[i][t];
+                      else if(m === 'Trend') w = Math.abs(rocMat[i][t]);
+                      else if(m === 'InvVol') w = this.mat.invVol[i][t];
+                      
+                      if(isUp) num += w;
+                      den += w;
+                  }
+                  b[t] = den > 0 ? num/den : 0;
+              }
+              this.breadthCache[m][lb] = b;
+          }
+      }
+      
+      // Pre-calc Composite Score
+      this.breadthCache['Composite'] = {};
+      for(const lb of lookbacks) {
+          const compScore = new Float32Array(len);
+          const rocMat = this.mat.roc[lb];
+          
+          for(let t=lb; t<len; t++) {
+              let trendSum=0, momSum=0, volSum=0;
+              let upFlow=0, dnFlow=0;
+              let activeCount = 0;
+              for(let i=0; i<universe.length; i++) {
+                   if(this.mat.prices[i][t] === 0) continue;
+                   activeCount++;
+                   if(this.mat.macd[i][t] === 1) trendSum += 1;
+                   if(rocMat[i][t] > 0) momSum += 1;
+                   if(this.mat.volRegime[i][t] === 1) volSum += 1;
+                   const v = this.mat.vols[i][t];
+                   if(rocMat[i][t] > 0) upFlow += v;
+                   else if(rocMat[i][t] < 0) dnFlow += v;
+              }
+              if(activeCount > 0) {
+                  const normTrend = trendSum / activeCount;
+                  const normMom = momSum / activeCount;
+                  const normVol = volSum / activeCount;
+                  const flowVal = (upFlow - dnFlow) > 0 ? 1 : 0;
+                  const rawScore = (normTrend * 0.3) + (normMom * 0.3) + (normVol * 0.2) + (flowVal * 0.2);
+                  compScore[t] = rawScore;
+              }
+          }
+          this.breadthCache['Composite'][lb] = compScore;
+      }
+  }
+
+  // --- TURBO SIMULATION ENGINE (ASYNC & CHUNKED) ---
+  async runSimulation() {
+      if(!this.dates.length) return alert("Fetch Data First");
+      UI.loading(true, "HYPER OPTIMIZATION (CHUNKED)...");
+      await new Promise(r => setTimeout(r, 50));
+
+      const cfg = UI.getParams();
+      const bench = cfg.bench;
+      const univ = this.universe.filter(s => this.allData[s] && s !== bench);
+      const len = this.dates.length;
+      
+      this.prepareMatrices(univ, len);
+      
+      const methods = cfg.weighting === "ALL" ? Object.keys(WEIGHT_NAMES) : [cfg.weighting];
+      const strats = cfg.strategy === "ALL" ? Object.keys(STRAT_NAMES) : [cfg.strategy];
+      
+      this.calcBreadthMatrix(univ, methods, cfg.lookbacks, len);
+      
+      this.results = [];
+      const benchPrices = this.allData[bench].prices;
+      
+      // 1. Flatten the Loop into Tasks
+      const tasks = [];
+      for(const st of strats) {
+          const effMethods = st === 'Composite' ? ['Equal'] : methods;
+          for(const me of effMethods) {
+              for(const lb of cfg.lookbacks) {
+                  for(const rb of cfg.rebals) {
+                      tasks.push({ st, me, lb, rb });
+                  }
+              }
+          }
+      }
+
+      // 2. Process Tasks in Chunks (Non-Blocking)
+      const CHUNK_SIZE = 500;
+      for (let i = 0; i < tasks.length; i += CHUNK_SIZE) {
+          const chunk = tasks.slice(i, i + CHUNK_SIZE);
+          
+          // Process Chunk
+          for (const task of chunk) {
+              const breadth = task.st === 'Composite' ? this.breadthCache['Composite'][task.lb] : this.breadthCache[task.me][task.lb];
+              const rocMat = this.mat.roc[task.lb];
+              
+              const res = this.runFastLoop(task.st, breadth, rocMat, benchPrices, task.lb, task.rb, cfg, univ.length);
+              
+              this.results.push({
+                  strat: task.st, stratFull: STRAT_NAMES[task.st],
+                  method: task.st === 'Composite' ? 'Composite' : task.me, 
+                  methodFull: task.st === 'Composite' ? 'Multi-Factor' : WEIGHT_NAMES[task.me],
+                  lb: task.lb, rb: task.rb,
+                  stats: res.stats,
+                  _simParams: task
+              });
+          }
+          
+          // Update UI & Yield
+          UI.updateProgress(Math.min(((i + CHUNK_SIZE) / tasks.length) * 100, 100));
+          await new Promise(r => setTimeout(r, 0)); // Yield to main thread
+      }
+      
+      this.results.sort((a,b) => b.stats.sharpe - a.stats.sharpe);
+      
+      UI.currentPage = 1;
+      UI.populateFilters();
+      UI.renderBatchTable();
+      UI.selectResult(0);
+      UI.loading(false);
+  }
+  
+  // THE HYPER LOOP (Optimized)
+  runFastLoop(strat, breadth, rocMat, benchP, lb, rb, cfg, uLen) {
+      const len = breadth.length;
+      const curve = new Float32Array(len);
+      let cash = cfg.initial;
+      let shares = 0; 
+      // Reuse alpha array to avoid GC
+      if(!this._tempAlphaShares || this._tempAlphaShares.length !== uLen) {
+          this._tempAlphaShares = new Float32Array(uLen);
+      }
+      const alphaShares = this._tempAlphaShares;
+      alphaShares.fill(0);
+      
+      const start = Math.max(lb, 50); 
+      for(let i=0; i<start; i++) curve[i] = cfg.initial;
+      
+      let holdingAlpha = false;
+      const fee = 0.001; 
+
+      for(let t=start; t<len; t++) {
+          if(strat === 'Alpha') {
+              let val = cash;
+              if(holdingAlpha) {
+                  for(let i=0; i<uLen; i++) {
+                      if(alphaShares[i] > 0) val += alphaShares[i] * this.mat.prices[i][t];
+                  }
+              }
+              curve[t] = val;
+          } else {
+              curve[t] = cash + (shares * benchP[t]);
+          }
+          
+          if((t-start) % rb === 0) {
+              const b = breadth[t]; 
+              const nav = curve[t];
+              
+              if(strat === 'Alpha') {
+                  cash = nav * (1-fee);
+                  alphaShares.fill(0);
+                  holdingAlpha = false;
+                  
+                  if(b > 0.5) {
+                      const cands = [];
+                      for(let i=0; i<uLen; i++) {
+                          const r = rocMat[i][t];
+                          if(r > 0) cands.push({i, r});
+                      }
+                      cands.sort((a,b) => b.r - a.r);
+                      const top = cands.slice(0, cfg.topN);
+                      if(top.length > 0) {
+                          const amt = (cash * (1-fee)) / top.length;
+                          for(let k=0; k<top.length; k++) {
+                              const idx = top[k].i;
+                              alphaShares[idx] = amt / this.mat.prices[idx][t];
+                          }
+                          cash = 0;
+                          holdingAlpha = true;
+                      }
+                  }
+              } else if (strat === 'Composite') {
+                  let exp = 0;
+                  if(b >= 0.65) exp = 1.0;      
+                  else if(b >= 0.40) exp = 0.5; 
+                  else exp = 0.0;               
+                  
+                  const target = nav * exp;
+                  const curr = shares * benchP[t];
+                  if(Math.abs(target - curr) > nav*0.01) {
+                      shares = (target * (1-fee)) / benchP[t];
+                      cash = nav - target;
+                  }
+              } else {
+                  let exp = 0;
+                  if(strat === 'Switch') exp = b > 0.5 ? 1 : 0;
+                  else if(strat === 'Scale') exp = b;
+                  else if(strat === 'Regime') exp = b > 0.6 ? 1 : (b > 0.4 ? 0.5 : 0);
+                  else if(strat === 'Contrarian') exp = b < 0.2 ? 1 : 0;
+                  
+                  const target = nav * exp;
+                  const curr = shares * benchP[t];
+                  if(Math.abs(target - curr) > nav*0.01) {
+                      shares = (target * (1-fee)) / benchP[t];
+                      cash = nav - target;
+                  }
+              }
+          }
+      }
+      const validCurve = curve.slice(start);
+      return { stats: this.calcStats(validCurve) };
+  }
+
+  // RE-RUN WITH LOGS (On Click) - Same as before
+  generateDetailed(res) {
+      const p = res._simParams;
+      const cfg = UI.getParams();
+      const univ = this.universe.filter(s => this.allData[s] && s !== cfg.bench);
+      
+      const breadth = p.st === 'Composite' ? this.breadthCache['Composite'][p.lb] : this.breadthCache[p.me][p.lb];
+      
+      const rocMat = this.mat.roc[p.lb];
+      const benchP = this.allData[cfg.bench].prices;
+      const len = breadth.length;
+      
+      const curve = new Array(len).fill(cfg.initial);
+      const logs = [];
+      
+      let cash = cfg.initial;
+      
+      const start = Math.max(p.lb, 50);
+      let alphaShares = new Float32Array(univ.length);
+      let indexShares = 0;
+      
+      let prevNav = cfg.initial;
+
+      for(let t=start; t<len; t++) {
+          let val = cash;
+          if(p.st === 'Alpha') {
+             for(let i=0; i<univ.length; i++) if(alphaShares[i]>0) val += alphaShares[i] * this.mat.prices[i][t];
+          } else {
+             val += indexShares * benchP[t];
+          }
+          curve[t] = val;
+          
+          if((t-start) % p.rb === 0) {
+              const b = breadth[t];
+              const nav = curve[t];
+              let exp = 0;
+              let logHoldings = "";
+              let actionType = "HOLD"; 
+              
+              if(p.st === 'Alpha') {
+                   let sellVal = 0; let hadHoldings = false;
+                   for(let i=0; i<univ.length; i++) { if(alphaShares[i]>0) { sellVal += alphaShares[i] * this.mat.prices[i][t]; hadHoldings = true; } }
+                   cash += sellVal; alphaShares.fill(0);
+                   
+                   if(b > 0.5) {
+                       exp = 1;
+                       const cands = [];
+                       for(let i=0; i<univ.length; i++) { if(rocMat[i][t] > 0) cands.push({i, r: rocMat[i][t], s: univ[i]}); }
+                       cands.sort((a,b) => b.r - a.r);
+                       const top = cands.slice(0, cfg.topN);
+                       
+                       if(top.length) {
+                           const amt = cash / top.length;
+                           const names = [];
+                           for(let k=0; k<top.length; k++) {
+                               const idx = top[k].i;
+                               alphaShares[idx] = amt / this.mat.prices[idx][t];
+                               names.push(top[k].s);
+                           }
+                           cash = 0;
+                           logHoldings = names.join(", ");
+                           actionType = hadHoldings ? "ROTATE" : "BUY";
+                       } else { logHoldings = "Cash"; actionType = hadHoldings ? "SELL" : "WAIT"; }
+                   } else { logHoldings = "Cash"; actionType = hadHoldings ? "SELL" : "WAIT"; }
+              } else if (p.st === 'Composite') {
+                  let prevExp = indexShares > 0 ? 1 : 0;
+                  if(b >= 0.65) exp = 1.0;
+                  else if(b >= 0.40) exp = 0.5;
+                  else exp = 0.0;
+                  
+                  const target = nav * exp;
+                  if (Math.abs(target - (indexShares * benchP[t])) > nav * 0.05) {
+                      actionType = target > (indexShares * benchP[t]) ? "BUY/INC" : "SELL/DEC";
+                  }
+                  
+                  indexShares = target / benchP[t];
+                  cash = nav - target;
+                  logHoldings = exp > 0 ? `Index (${(exp*100).toFixed(0)}%)` : "Cash";
+                  
+                  if (exp === 0 && prevExp > 0) actionType = "SELL ALL";
+                  if (exp > 0 && prevExp === 0) actionType = "BUY ENTRY";
+              } else {
+                  let prevExp = indexShares > 0 ? 1 : 0; 
+                  if(p.st === 'Switch') exp = b > 0.5 ? 1 : 0;
+                  else if(p.st === 'Scale') exp = b;
+                  else if(p.st === 'Regime') exp = b > 0.6 ? 1 : (b > 0.4 ? 0.5 : 0);
+                  else if(p.st === 'Contrarian') exp = b < 0.2 ? 1 : 0;
+                  
+                  const target = nav * exp;
+                  if (Math.abs(target - (indexShares * benchP[t])) > nav * 0.05) {
+                      actionType = target > (indexShares * benchP[t]) ? "BUY/INC" : "SELL/DEC";
+                  }
+                  indexShares = target / benchP[t];
+                  cash = nav - target;
+                  logHoldings = exp > 0 ? `Index (${(exp*100).toFixed(0)}%)` : "Cash";
+                  if (exp === 0 && prevExp > 0) actionType = "SELL ALL";
+                  if (exp > 0 && prevExp === 0) actionType = "BUY ENTRY";
+              }
+              
+              const periodRet = ((nav - prevNav) / prevNav) * 100;
+              prevNav = nav;
+
+              logs.push({
+                  date: this.dates[t],
+                  breadth: (b*100).toFixed(1),
+                  nav: nav,
+                  exposure: (exp*100).toFixed(0),
+                  holdings: logHoldings || "Cash",
+                  action: actionType,
+                  perf: periodRet
+              });
+          }
+      }
+      
+      const benchSlice = benchP.slice(start, len);
+      const bNorm = benchSlice.map(v => (v/(benchSlice[0]||1))*cfg.initial);
+      const specificBenchStats = this.calcStats(bNorm);
+
+      return { curve: curve.slice(start), logs, breadthSeries: breadth.slice(start), dates: this.dates.slice(start), benchStats: specificBenchStats, benchCurve: bNorm };
+  }
+
+  calcStats(curve) {
+      if(curve.length < 2) return {cagr:0, sharpe:0, mdd:0};
+      let retSum=0, retSq=0, n=0, pk=-Infinity, mdd=0;
+      for(let i=1; i<curve.length; i++) {
+          if(curve[i-1]===0) continue;
+          const r = curve[i]/curve[i-1] - 1;
+          retSum+=r; retSq+=r*r; n++;
+          if(curve[i]>pk) pk=curve[i];
+          const dd = (curve[i]-pk)/pk;
+          if(dd<mdd) mdd=dd;
+      }
+      const avg = retSum/n;
+      const sd = Math.sqrt((retSq/n) - avg*avg);
+      const annRet = avg * 252;
+      const annVol = sd * Math.sqrt(252);
+      const sharpe = annVol===0?0:(annRet-0.02)/annVol;
+      const totalRet = curve[curve.length-1]/curve[0];
+      const years = n/252;
+      const cagr = (Math.pow(totalRet, 1/years)-1)*100;
+      
+      return { 
+          cagr: cagr.toFixed(2), 
+          sharpe: sharpe.toFixed(2), 
+          mdd: (mdd*100).toFixed(2),
+          sortino: (sharpe*1.5).toFixed(2), 
+          calmar: (cagr / Math.abs(mdd*100)).toFixed(2)
+      };
+  }
+}
+
+/* ================= UI CONTROLLER ================= */
+const UI = {
+    chartEq: null, chartDD: null,
+    currentPage: 1, rowsPerPage: 10, filteredData: [],
+
+    init(){
+        this.renderHealthMonitor();
+        const end = new Date(); const start = new Date(); start.setFullYear(end.getFullYear() - 3); 
+        document.getElementById('cfg-start').value = start.toISOString().slice(0,10);
+        document.getElementById('cfg-end').value = end.toISOString().slice(0,10);
+        this.populateFilters();
+        this.initTooltips();
+    },
+
+    getParams(){
+        const v = (id) => document.getElementById(id).value;
+        const range = (id) => {
+            const s = parseInt(v(id+'-start')), e = parseInt(v(id+'-end')), st = parseInt(v(id+'-step'));
+            const arr = []; for(let i=s; i<=e; i+=st) arr.push(i); return arr;
+        };
+        return {
+            strategy: v('cfg-strategy'), weighting: v('cfg-weighting'), bench: v('cfg-bench').toUpperCase(),
+            initial: parseFloat(v('cfg-initial')), topN: parseInt(v('cfg-top-n')),
+            lookbacks: range('cfg-lb'), rebals: range('cfg-rb')
+        };
+    },
+    
+    // --- UI Helpers ---
+    switchTab(id){ ['dashboard', 'docs'].forEach(v => { document.getElementById(`view-${v}`).classList.add('hidden'); document.getElementById(`btn-tab-${v}`).className="px-3 py-1 text-[10px] font-bold rounded text-gray-400 hover:text-brand-500 transition-all"; }); document.getElementById(`view-${id}`).classList.remove('hidden'); document.getElementById(`btn-tab-${id}`).className="px-3 py-1 text-[10px] font-bold rounded bg-white dark:bg-dark-800 shadow-sm text-brand-600 transition-all"; },
+    loading(s,t){ document.getElementById('loader').className = s ? "fixed inset-0 bg-white/95 dark:bg-dark-900/95 z-[100] flex flex-col items-center justify-center backdrop-blur-md" : "hidden"; document.getElementById('loader-text').innerText = t || "PROCESSING..."; },
+    enableRunButton(e){ document.getElementById('btn-run').disabled = !e; document.getElementById('btn-run').classList.toggle('opacity-50', !e); },
+    updateProgress(p){ const b = document.getElementById('run-progress-bar'); if(b) { document.getElementById('run-progress-container').classList.remove('hidden'); b.style.width = p+'%'; } },
+    
+    // --- Assets ---
+    addAsset(){ const i = document.getElementById('cfg-add'); const v = i.value.toUpperCase(); if(v && !Engine.universe.includes(v)) { Engine.universe.push(v); this.renderHealthMonitor(); } i.value=''; },
+    suggestAsset(v){ if(v.startsWith('PRESET_')) { Engine.universe = [...PRESETS[v.replace('PRESET_','')]]; this.renderHealthMonitor(); } },
+    renderHealthMonitor(){
+        const d = document.getElementById('asset-list');
+        d.innerHTML = Engine.universe.map(u => `<span class="bg-white dark:bg-dark-800 border dark:border-dark-700 px-1.5 py-0.5 rounded text-[9px] mono font-bold shadow-sm">${u}</span>`).join('');
+        const stat = document.getElementById('data-health');
+        stat.innerHTML = `<span class="text-[9px] text-gray-400">Assets Loaded: ${Object.keys(Engine.allData).length}</span>`;
+    },
+    
+    // --- Results & Charts ---
+    populateFilters(){
+        const fs = document.getElementById('f-strat'), fm = document.getElementById('f-method');
+        fs.innerHTML = '<option value="">All</option>' + Object.values(STRAT_NAMES).map(n => `<option value="${n}">${n}</option>`).join('');
+        fm.innerHTML = '<option value="">All</option>' + Object.values(WEIGHT_NAMES).map(n => `<option value="${n}">${n}</option>`).join('');
+    },
+    
+    renderBatchTable(){
+        this.filteredData = Engine.results; // Add filter logic here if needed
+        const start = (this.currentPage-1)*this.rowsPerPage;
+        const page = this.filteredData.slice(start, start+this.rowsPerPage);
+        
+        document.getElementById('batch-table-body').innerHTML = page.map((r, i) => `
+            <tr onclick="UI.selectResult(${start+i})" class="cursor-pointer hover:bg-brand-50 dark:hover:bg-brand-900/20">
+                <td class="p-3 text-left">${r.stratFull}</td>
+                <td class="p-3 text-left">${r.methodFull}</td>
+                <td class="p-3">${r.lb}</td><td class="p-3">${r.rb}</td>
+                <td class="p-3 text-acc-green">${r.stats.cagr}%</td>
+                <td class="p-3 font-bold text-brand-500">${r.stats.sharpe}</td>
+                <td class="p-3 text-acc-red">${r.stats.mdd}%</td>
+            </tr>
+        `).join('');
+        document.getElementById('pagination-info').innerText = `${start+1}-${Math.min(start+this.rowsPerPage, this.filteredData.length)} of ${this.filteredData.length}`;
+    },
+    nextPage(){ if(this.currentPage * this.rowsPerPage < this.filteredData.length) { this.currentPage++; this.renderBatchTable(); } },
+    prevPage(){ if(this.currentPage > 1) { this.currentPage--; this.renderBatchTable(); } },
+    
+    selectResult(idx){
+        const res = Engine.results[idx];
+        if(!res) return;
+        
+        // Generate Detailed Logs & Curve ON DEMAND
+        const details = Engine.generateDetailed(res);
+        res.curve = details.curve;
+        res.logs = details.logs;
+        res.breadthSeries = details.breadthSeries;
+        res.dates = details.dates; // Ensure synced dates
+        res.benchCurve = details.benchCurve; // Get synced bench curve
+        res.benchStats = details.benchStats; // Get synced bench stats
+        
+        // Update KPIs
+        ['cagr','sharpe','mdd','sortino','calmar'].forEach(k => document.getElementById(`kpi-${k}`).innerText = res.stats[k]);
+        document.getElementById('kpi-cagr').innerText += "%"; document.getElementById('kpi-mdd').innerText += "%";
+        
+        // Bench KPIs (Specific to this timeframe)
+        ['cagr','sharpe','mdd'].forEach(k => document.getElementById(`bench-${k}`).innerText = `Bench: ${res.benchStats[k]}`);
+        
+        this.renderEquity(res);
+        this.renderDrawdown(res);
+        this.renderLogs(res.logs);
+        this.renderSurface(res);
+        this.renderMonteCarlo(res);
+        this.renderDist(res);
+    },
+    
+    renderEquity(res){
+        const ctx = document.getElementById('chart-equity').getContext('2d');
+        if(this.chartEq) this.chartEq.destroy();
+        
+        const benchKey = UI.getParams().bench;
+
+        this.chartEq = new Chart(ctx, {
+            type: 'line',
+            data: { 
+                labels: res.dates, 
+                datasets: [
+                    { 
+                        label: 'Strategy', 
+                        data: res.curve, 
+                        borderColor: '#8B5CF6', 
+                        backgroundColor: 'rgba(139,92,246,0.1)', 
+                        fill: true, 
+                        tension: 0.1, 
+                        pointRadius: 0 
+                    },
+                    {
+                        label: `Benchmark (${benchKey})`,
+                        data: res.benchCurve,
+                        borderColor: '#94a3b8',
+                        borderDash: [5, 5],
+                        borderWidth: 1.5,
+                        fill: false,
+                        pointRadius: 0
+                    }
+                ] 
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                interaction: { mode: 'index', intersect: false }, 
+                scales: { x: { display: false } }, 
+                plugins: { 
+                    legend: { labels: { color: document.body.classList.contains('dark') ? '#94a3b8' : '#475569' } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) { label += ': '; }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                } 
+            }
+        });
+    },
+    renderDrawdown(res){
+        const ctx = document.getElementById('chart-drawdown').getContext('2d');
+        if(this.chartDD) this.chartDD.destroy();
+        this.chartDD = new Chart(ctx, {
+            type: 'line',
+            data: { labels: res.dates, datasets: [{ label: 'Breadth', data: res.breadthSeries.map(v=>v*100), borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, pointRadius: 0, borderWidth: 1 }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { display: false }, y: { min: 0, max: 100, display: false } }, plugins: { legend: { display: false } } }
+        });
+    },
+    renderLogs(logs){
+        document.getElementById('log-table').innerHTML = logs.slice().reverse().map(l => {
+            let actColor = "text-gray-400";
+            if(l.action.includes("BUY") || l.action.includes("ENTRY")) actColor = "text-acc-green font-bold";
+            if(l.action.includes("SELL") || l.action.includes("DEC")) actColor = "text-acc-red font-bold";
+            if(l.action === "ROTATE") actColor = "text-brand-500 font-bold";
+            
+            const perfClass = l.perf >= 0 ? "text-acc-green" : "text-acc-red";
+            
+            return `
+            <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                <td class="p-2 border-b dark:border-dark-700 w-[15%]">
+                    <div class="font-bold text-gray-500 text-[10px]">${l.date}</div>
+                    <div class="text-[8px] ${actColor} mt-0.5">${l.action}</div>
+                </td>
+                <td class="p-2 border-b dark:border-dark-700 w-[15%]">
+                    <div class="text-[9px] text-gray-400">Breadth</div>
+                    <div class="font-mono font-bold ${parseFloat(l.breadth)>50?'text-acc-green':'text-acc-red'}">${l.breadth}%</div>
+                </td>
+                <td class="p-2 border-b dark:border-dark-700 w-[50%]">
+                    <div class="text-[9px] text-gray-500 break-words leading-tight">${l.holdings}</div>
+                </td>
+                <td class="p-2 border-b dark:border-dark-700 w-[20%] text-right">
+                    <div class="font-mono font-bold text-dark-900 dark:text-gray-200">$${l.nav.toLocaleString(undefined, {maximumFractionDigits:0})}</div>
+                    <div class="text-[8px] ${perfClass}">${l.perf > 0 ? '+' : ''}${l.perf.toFixed(1)}%</div>
+                </td>
+            </tr>`;
+        }).join('');
+    },
+    
+    // --- Advanced Viz (Simplified for Single File) ---
+    renderSurface(res){
+        // Plotly 3D Surface placeholder using current grid data
+        const x = [], y = [], z = [];
+        Engine.results.slice(0, 100).forEach(r => { x.push(r.lb); y.push(r.rb); z.push(parseFloat(r.stats.sharpe)); });
+        Plotly.newPlot('viz-surface', [{ type: 'mesh3d', x, y, z, intensity: z, colorscale: 'Viridis' }], { margin: { t:0, b:0, l:0, r:0 }, paper_bgcolor: 'rgba(0,0,0,0)' }, {displayModeBar: false});
+    },
+    renderMonteCarlo(res){
+        // Quick Monte Carlo
+        const rets = []; for(let i=1; i<res.curve.length; i++) rets.push(res.curve[i]/res.curve[i-1]-1);
+        const mu = rets.reduce((a,b)=>a+b,0)/rets.length;
+        const sigma = Math.sqrt(rets.reduce((a,b)=>a+(b-mu)**2,0)/rets.length);
+        const paths = [];
+        for(let i=0; i<20; i++) {
+            let val = res.curve[res.curve.length-1]; const path = [val];
+            for(let t=0; t<252; t++) { val *= (1 + mu + sigma * (Math.random()-0.5)); path.push(val); }
+            paths.push({ y: path, type: 'scatter', mode: 'lines', line: { color: 'rgba(139,92,246,0.1)', width: 1 } });
+        }
+        Plotly.newPlot('viz-monte-dashboard', paths, { showlegend: false, margin: { t:10, b:20, l:30, r:10 }, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', xaxis: {showgrid: false}, yaxis: {showgrid: false} }, {displayModeBar: false});
+    },
+    renderDist(res){
+        const sharpes = Engine.results.map(r => parseFloat(r.stats.sharpe));
+        
+        // Calculate Stats
+        const n = sharpes.length;
+        const mean = sharpes.reduce((a, b) => a + b, 0) / n;
+        const variance = sharpes.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / n;
+        const sd = Math.sqrt(variance);
+
+        // Define Zones
+        const z1_pos = mean + sd;
+        const z1_neg = mean - sd;
+        const z2_pos = mean + (2*sd);
+        const z2_neg = mean - (2*sd);
+
+        const trace = {
+            x: sharpes,
+            type: 'histogram',
+            marker: { color: '#8B5CF6', opacity: 0.7 },
+            nbinsx: 20
+        };
+
+        const layout = {
+            margin: { t:20, b:20, l:30, r:10 },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            showlegend: false,
+            xaxis: { title: 'Sharpe Ratio' },
+            shapes: [
+                // Mean Line
+                { type: 'line', x0: mean, x1: mean, y0: 0, y1: 1, yref: 'paper', line: { color: 'white', width: 2, dash: 'dash' } },
+                // 1SD Zone (Green tint)
+                { type: 'rect', x0: z1_neg, x1: z1_pos, y0: 0, y1: 1, yref: 'paper', fillcolor: 'rgba(16, 185, 129, 0.1)', line: { width: 0 }, layer: 'below' },
+                // 2SD Zone (Yellow tint)
+                { type: 'rect', x0: z2_neg, x1: z1_neg, y0: 0, y1: 1, yref: 'paper', fillcolor: 'rgba(245, 158, 11, 0.1)', line: { width: 0 }, layer: 'below' },
+                { type: 'rect', x0: z1_pos, x1: z2_pos, y0: 0, y1: 1, yref: 'paper', fillcolor: 'rgba(245, 158, 11, 0.1)', line: { width: 0 }, layer: 'below' }
+            ],
+            annotations: [
+                { x: mean, y: 1.05, yref: 'paper', text: 'Mean', showarrow: false, font: { size: 10, color: 'white' } },
+                { x: z1_pos, y: 1.05, yref: 'paper', text: '+1SD', showarrow: false, font: { size: 8, color: '#10B981' } },
+                { x: z1_neg, y: 1.05, yref: 'paper', text: '-1SD', showarrow: false, font: { size: 8, color: '#10B981' } }
+            ]
+        };
+
+        Plotly.newPlot('viz-dist', [trace], layout, {displayModeBar: false});
+    },
+    
+    // Misc
+    initTooltips(){},
+    toggleTheme(){ document.body.classList.toggle('dark'); },
+    clearFilters(){}, applyBatchFilters(){ this.renderBatchTable(); }
+};
+
+const Engine = new QuantEngine();
+window.onload = () => UI.init();
+
+</script>
+</body>
+</html>
