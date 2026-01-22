@@ -1,271 +1,224 @@
-# Global Macro Breadth Engine v7.0 TURBO
+# Global Macro Breadth Engine v7.1 TURBO  
+### *Robustness Restored • Hyper-Optimized • Fully Client-Side*
 
-A high-performance, browser-based quantitative research engine for **Market Breadth Analysis**, **Strategy Optimization**, and **Alpha Rotation**, implemented entirely in **HTML + JavaScript** and deployable as a **static web application**.
+A **high-performance quantitative research engine** for  
+**Market Breadth Analysis, Regime Detection, and Alpha Rotation**,  
+running entirely in the browser with **HTML + JavaScript**.
 
-This project is designed for **macro investors, quantitative researchers, and systematic traders** who want to analyze market regimes, optimize strategy parameters, and evaluate robustness without relying on backend infrastructure.
+Designed for **macro investors, systematic traders, and quant researchers**  
+who want deep market insight *without backend infrastructure*.
 
----
+**Tech Stack:** Tailwind • Chart.js • Plotly • MathJax  
+**Data Source:** Yahoo Finance (5Y Daily)
 
-## 1. Key Features
-
-- Market Breadth computation across customizable asset universes
-- Multi-strategy backtesting (Index-based & Stock-level Alpha)
-- Hyper-parameter grid simulation (Lookback × Rebalance)
-- Risk-adjusted performance evaluation
-- Monte Carlo forward projection
-- Distribution & robustness analysis
-- Fully client-side (no backend, no database)
+</div>
 
 ---
 
-## 2. System Architecture (High Level)
+## 🚀 What This Engine Does (In One Sentence)
+
+> **Transforms raw multi-asset price data into actionable market regimes and optimized strategies using Market Breadth, Hyper-Parameter Grids, and Robustness Analysis.**
+
+---
+
+## ✨ Core Capabilities
+
+### Market Intelligence
+- Multi-asset **Market Breadth** (Stocks / ETFs / Crypto)
+- **Composite Score v6** (Trend × Momentum × Volatility × Flow)
+- Dynamic **Market Regime Detection** (Bull / Distribution / Bear)
+
+### Strategy Research
+- Index strategies (Switch, Scale, Regime, Contrarian)
+- **Alpha Rotation** (Top-N momentum stock picking)
+- Full **Grid Search**: Lookback × Rebalance
+- Strategy matrix with live sorting & filtering
+
+### Risk & Robustness
+- CAGR, Sharpe, Sortino, Max Drawdown, Calmar
+- **4D Hyper-Parameter Surface**
+- **Robust Cluster Detection** (Neighbor-Weighted Stability)
+- Distribution analysis with SD Zones
+- Monte Carlo forward simulations
+
+### Architecture
+- 100% client-side (no server, no database)
+- Async + chunked simulation (non-blocking UI)
+- Single-file deployment (GitHub Pages ready)
+
+---
+
+## 🧠 System Workflow (High Level)
 
 ```text
-User Input
-   ↓
-Market Data Fetch (Yahoo Finance)
-   ↓
-Indicator Matrix Preparation
-   ↓
-Breadth Calculation
-   ↓
-Strategy Simulation (Grid Search)
-   ↓
-Performance Metrics
-   ↓
-Visualization & Ranking
+1. Fetch Market Data (Yahoo Finance, 5Y)
+2. Align Dates & Normalize Price Matrices
+3. Precompute Indicators (ROC, MACD, Volatility)
+4. Calculate Breadth (Multiple Weighting Schemes)
+5. Run Hyper-Grid Simulation (LB × RB × Strategy)
+6. Rank, Visualize, and Stress-Test Results
 ````
 
 ---
 
-## 3. Data Source
+## 📦 Asset Universe
 
-* **Yahoo Finance (5 years, daily)**
-* Symbols:
+* **Presets**
 
-  * Equities: AAPL, MSFT, NVDA, etc.
-  * Index ETFs: QQQ, SPY
-  * Crypto (optional): BTC-USD, ETH-USD
-
-Data is fetched via CORS proxy and aligned to a unified trading calendar.
+  * QQQ: Top US Technology Leaders
+  * SPY: US Market Leaders
+  * Crypto: Top Market Cap Coins
+* Manual symbol input supported
+* Benchmark configurable (default: QQQ)
 
 ---
 
-## 4. Market Breadth Calculation
+## 🧮 Mathematical Foundations
 
-Market Breadth measures the **percentage of assets in an uptrend or positive momentum** within a universe.
+### 1. Rate of Change (ROC)
 
-### 4.1 Rate of Change (ROC)
-
-For each asset:
+Used as the core momentum signal.
 
 [
-ROC_t = \frac{P_t - P_{t-n}}{P_{t-n}}
+ROC_{t,n} = \frac{P_t - P_{t-n}}{P_{t-n}}
 ]
 
 **Example**
 
-* Price today = 110
-* Price 20 days ago = 100
+* ( P_t = 110 )
+* ( P_{t-20} = 100 )
 
 [
-ROC = (110 - 100) / 100 = 0.10 = 10%
+ROC = \frac{110 - 100}{100} = 0.10 = 10%
 ]
 
 ---
 
-### 4.2 Breadth (Equal Weight)
+### 2. Market Breadth (General Form)
 
 [
-Breadth_t = \frac{\text{Number of assets with } ROC_t > 0}{\text{Total assets}}
+Breadth_t = \frac{\sum_{i=1}^{N} w_i \cdot I(ROC_{i,t} > 0)}{\sum_{i=1}^{N} w_i}
 ]
 
-**Example**
+Where:
 
-* Universe size = 10 stocks
-* Stocks with positive ROC = 6
+* ( I(\cdot) ) = indicator function (true = 1, false = 0)
+* ( w_i ) = asset weight
 
-[
-Breadth = 6 / 10 = 0.60 = 60%
-]
+#### Weighting Methods
+
+| Method      | Weight Definition        |           |   |
+| ----------- | ------------------------ | --------- | - |
+| Equal       | ( w_i = 1 )              |           |   |
+| Volume      | ( w_i = Volume_{i,t} )   |           |   |
+| Trend       | ( w_i =                  | ROC_{i,t} | ) |
+| Inverse Vol | ( w_i = 1/\sigma_{i,t} ) |           |   |
 
 ---
 
-### 4.3 Weighted Breadth Variants
+### 3. Composite Score v6 (Market Regime Core)
 
-| Method      | Weight Formula             |           |   |
-| ----------- | -------------------------- | --------- | - |
-| Equal       | ( w_i = 1 )                |           |   |
-| Volume      | ( w_i = Volume_{i,t} )     |           |   |
-| Trend       | ( w_i =                    | ROC_{i,t} | ) |
-| Inverse Vol | ( w_i = 1 / \sigma_{i,t} ) |           |   |
-
-[
-Breadth_t = \frac{\sum w_i \cdot I(ROC_i > 0)}{\sum w_i}
-]
-
----
-
-## 5. Composite Breadth Score (v6)
-
-A multi-factor regime score combining trend, momentum, volatility, and flow.
+A multi-factor normalized regime score:
 
 [
 Score_t =
-0.3 \cdot Trend +
-0.3 \cdot Momentum +
-0.2 \cdot Volatility +
-0.2 \cdot Flow
+0.3 \cdot Trend_t +
+0.3 \cdot Momentum_t +
+0.2 \cdot Volatility_t +
+0.2 \cdot Flow_t
 ]
 
-Where each component is normalized to ([0,1]).
+Where:
 
-### Regime Mapping
+* **Trend**: MACD > Signal
+* **Momentum**: ROC > 0
+* **Volatility**: High-vol regime ratio
+* **Flow**: Net positive volume dominance
 
-| Score       | Market Regime | Exposure |
-| ----------- | ------------- | -------- |
-| ≥ 0.65      | Bull          | 100%     |
-| 0.40 – 0.65 | Distribution  | 50%      |
-| < 0.40      | Bear          | 0%       |
+#### Regime Mapping
 
-**Example**
-
-* Trend = 0.7
-* Momentum = 0.6
-* Volatility = 0.5
-* Flow = 1
-
-[
-Score = (0.3×0.7) + (0.3×0.6) + (0.2×0.5) + (0.2×1)
-= 0.21 + 0.18 + 0.10 + 0.20
-= 0.69 \Rightarrow Bull Regime
-]
+|       Score | Regime       | Exposure |
+| ----------: | ------------ | -------: |
+|      ≥ 0.65 | Bull         |     100% |
+| 0.40 – 0.65 | Distribution |      50% |
+|      < 0.40 | Bear         |       0% |
 
 ---
 
-## 6. Trading Strategies
+## 📈 Trading Strategies Implemented
 
-### 6.1 Index Switch (Binary)
+### 1. Index Switch (Binary)
 
-[
-Exposure =
-\begin{cases}
-1 & \text{if Breadth} > 50% \
-0 & \text{otherwise}
-\end{cases}
-]
+```text
+If Breadth > 50% → 100% Index
+Else → 100% Cash
+```
 
----
-
-### 6.2 Index Scale (Linear)
+### 2. Index Scale (Linear)
 
 [
 Exposure = Breadth
 ]
 
-**Example**
+### 3. Index Regime (Zone-Based)
 
-* Breadth = 70% → Invest 70% in index, 30% in cash
+```text
+> 60%  → 100%
+40–60% → 50%
+< 40%  → 0%
+```
+
+### 4. Contrarian (Mean Reversion)
+
+```text
+Buy only when Breadth < 20%
+```
+
+### 5. Alpha Rotation (Stock Picking)
+
+```text
+Condition: Breadth > 50%
+Select: Top-N assets ranked by ROC
+Allocate: Equal capital per asset
+```
 
 ---
 
-### 6.3 Index Regime (Zone-based)
+## 💼 Portfolio Simulation Model
 
-| Breadth | Exposure |
-| ------- | -------- |
-| > 60%   | 100%     |
-| 40–60%  | 50%      |
-| < 40%   | 0%       |
-
----
-
-### 6.4 Contrarian Strategy
+Portfolio Net Asset Value:
 
 [
-Buy\ Index \text{ if Breadth} < 20%
+NAV_t = Cash_t + \sum Shares_{i,t} \cdot Price_{i,t}
 ]
 
-Used to exploit extreme oversold conditions.
+* Rebalanced every **RB days**
+* Transaction cost applied per rebalance
+* Supports Index and Multi-Asset holdings
 
 ---
 
-### 6.5 Alpha Rotation (Stock-Level)
+## 📊 Performance Metrics
 
-1. Check market condition:
-   [
-   Breadth > 50%
-   ]
-2. Rank stocks by ROC
-3. Select **Top N**
-4. Allocate equal capital per stock
-
-**Example**
-
-* Capital = $10,000
-* Top 5 stocks → $2,000 per stock
-
----
-
-## 7. Portfolio Simulation
-
-Portfolio value evolves as:
-
-[
-NAV_t = Cash_t + \sum Shares_i \times Price_{i,t}
-]
-
-Rebalancing occurs every **RB days**.
-
-Transaction cost applied:
-
-[
-Effective\ Capital = Capital \times (1 - Fee)
-]
-
----
-
-## 8. Performance Metrics
-
-### 8.1 CAGR
+### CAGR
 
 [
 CAGR = \left(\frac{Final}{Initial}\right)^{1/Y} - 1
 ]
 
-**Example**
-
-* Initial = 10,000
-* Final = 20,000
-* Years = 3
+### Sharpe Ratio
 
 [
-CAGR = (2)^{1/3} - 1 = 26.0%
+Sharpe = \frac{R_{ann} - R_f}{\sigma_{ann}}
 ]
 
----
-
-### 8.2 Sharpe Ratio
+### Max Drawdown
 
 [
-Sharpe = \frac{R - R_f}{\sigma}
+MDD = \min \left(\frac{NAV_t - Peak_t}{Peak_t}\right)
 ]
 
-Where:
-
-* (R_f = 2%)
-* Returns annualized
-
----
-
-### 8.3 Max Drawdown (MDD)
-
-[
-MDD = \min \left(\frac{NAV_t - Peak}{Peak}\right)
-]
-
----
-
-### 8.4 Calmar Ratio
+### Calmar Ratio
 
 [
 Calmar = \frac{CAGR}{|MDD|}
@@ -273,30 +226,51 @@ Calmar = \frac{CAGR}{|MDD|}
 
 ---
 
-## 9. Monte Carlo Simulation
+## 🧱 Robustness Analysis (v7.1)
 
-* Empirical mean & volatility estimated from strategy returns
-* Simulate 252 trading days forward
-* Generate multiple stochastic paths
+To avoid overfitting, each grid point is scored using **neighbor-weighted stability**:
+
+[
+RobustScore_{i,j} =
+\frac{\sum v_{k,l} \cdot e^{-d^2/2\sigma^2}}{\sum e^{-d^2/2\sigma^2}}
+]
+
+Where:
+
+* ( d ) = distance in (LB, RB) grid
+* Stable clusters rank higher than sharp isolated peaks
+
+Displayed as:
+
+* Top Robust Clusters Table
+* Hyper-Surface Visualization
+* Distribution SD Zones
+
+---
+
+## 🎲 Monte Carlo Forecast
+
+Forward projection based on empirical returns:
 
 [
 NAV_{t+1} = NAV_t \cdot (1 + \mu + \sigma \cdot \epsilon)
 ]
 
-Where:
-
-* (\epsilon \sim U(-0.5, 0.5))
+* ( \epsilon \sim U(-0.5, 0.5) )
+* 252 steps per year
+* Multiple stochastic paths
 
 ---
 
-## 10. Deployment (GitHub Pages)
+## 🌐 Deployment
 
-1. Create a GitHub repository
+This project is **single-file deployable**.
+
+**GitHub Pages**
+
+1. Create a repository
 2. Upload `index.html`
-3. Enable GitHub Pages:
-
-   * Branch: `main`
-   * Folder: `/root`
+3. Enable Pages → `main / root`
 4. Access via:
 
 ```
@@ -305,27 +279,27 @@ https://username.github.io/repository-name/
 
 ---
 
-## 11. Limitations
+## ⚠️ Limitations
 
 * No backend persistence
 * Yahoo Finance rate limits may apply
 * Not intended for live trading execution
-* For research and educational use only
+* Research & educational use only
 
 ---
 
-## 12. Roadmap (Optional)
+## 🗺️ Roadmap
 
-* Save / Load configurations
-* Export full backtest results
-* Web Worker parallelization
-* PWA support
-* Server-side optimization
+* Save / Load strategy presets
+* CSV / JSON research export
+* Parallel Web Worker execution
+* PWA (offline & installable)
+* Optional server-side cache
 
 ---
 
 ## Disclaimer
 
-This software is provided for **research and educational purposes only**.
-No financial advice is given. Use at your own risk.
-
+This software is provided **for research and educational purposes only**.
+It does **not** constitute financial advice.
+Use at your own risk.
